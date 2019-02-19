@@ -8,7 +8,7 @@ using System.Windows.Shapes;
 
 namespace CourseWork
 {
-    class CanvasHelper
+    class CanvasHelper : Canvas
     {
         public Canvas cv;
         protected double Height, Width;
@@ -46,29 +46,33 @@ namespace CourseWork
             return this;
         }
 
-        private CanvasHelper Shape<T> (double x0, double y0, double width, double height, double thickness = 1, string color = "#000", string fill = "") where T : Shape,new() {
+        private CanvasHelper Shape<T> (double x0, double y0, double width, double height, double thickness = 1, Brush color = null, Brush fill = null) where T : Shape,new() {
             Shape shape = new T() {
                 Width = w(width),
                 Height = h(height),
-                Stroke = new SolidColorBrush((Color)ColorConverter.ConvertFromString(color)),
+                Stroke = color == null ? Helper.ColorBrush("#000") : color,
                 StrokeThickness = thickness,
             };
-            if (fill.Length > 0) {
-                shape.Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString(fill));
+            if (fill != null) {
+                shape.Fill = fill;
             }
-            shape.SetValue(Canvas.LeftProperty, w(x0));
-            shape.SetValue(Canvas.TopProperty, h(y0));
+            shape.SetValue(LeftProperty, w(x0));
+            shape.SetValue(TopProperty, h(y0));
             cv.Children.Add(shape);
             return this;
         }
 
-        public CanvasHelper Rectangle(double x0, double y0, double width, double height, double thickness = 1, string color = "#000") {
+        public CanvasHelper Rectangle(double x0, double y0, double width, double height, double thickness = 1, Brush color = null) {
             return Shape<Rectangle>(x0, y0, width, height, thickness, color);
         }
 
-        public CanvasHelper Ellipse(double x0, double y0, double width, double height, double thickness = 1, string color = "#000") {
+        public CanvasHelper Ellipse(double x0, double y0, double width, double height, double thickness = 1, Brush color = null) {
             return Shape<Ellipse>(x0, y0, width, height, thickness, color);
         }
 
+        public CanvasHelper Image(double x, double y, double width, double height, Brush img) {
+            return Shape<Rectangle>(x, y, width, height, 0, null, img);
+        }
+        
     }
 }
