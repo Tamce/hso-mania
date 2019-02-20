@@ -8,7 +8,7 @@ using System.Windows.Shapes;
 
 namespace CourseWork
 {
-    class CanvasHelper : Canvas
+    class CanvasHelper
     {
         public Canvas cv;
         protected double Height, Width;
@@ -56,8 +56,8 @@ namespace CourseWork
             if (fill != null) {
                 shape.Fill = fill;
             }
-            shape.SetValue(LeftProperty, w(x0));
-            shape.SetValue(TopProperty, h(y0));
+            shape.SetValue(Canvas.LeftProperty, w(x0));
+            shape.SetValue(Canvas.TopProperty, h(y0));
             cv.Children.Add(shape);
             return this;
         }
