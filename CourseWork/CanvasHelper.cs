@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using System.Windows.Input;
 
 namespace CourseWork
 {
@@ -12,6 +14,11 @@ namespace CourseWork
     {
         public Canvas cv;
         protected double Height, Width;
+        public class PointEventArg : EventArgs {
+            public Point point;
+        }
+        public event EventHandler<PointEventArg> MouseLeftButtonUp;
+        public event KeyEventHandler KeyDown;
         public CanvasHelper(Canvas _cv) {
             cv = _cv;
             if (double.IsNaN(cv.Height) && cv.ActualHeight == 0) {
@@ -19,6 +26,19 @@ namespace CourseWork
             }
             Height = cv.ActualHeight;
             Width = cv.ActualWidth;
+            cv.PreviewMouseLeftButtonUp += Canvas_MouseLeftButtonUp;
+            cv.PreviewKeyDown += Canvas_KeyDown;
+        }
+
+        private void Canvas_KeyDown(object sender, KeyEventArgs e) {
+            KeyDown(sender, e);
+        }
+
+        private void Canvas_MouseLeftButtonUp(object sender, MouseButtonEventArgs e) {
+            Point p = e.GetPosition(cv);
+            MouseLeftButtonUp(sender, new PointEventArg() {
+                point = new Point(w(p.X, true), h(p.Y, true))
+            });
         }
 
         public CanvasHelper SetRange(double width, double height) {
@@ -26,12 +46,21 @@ namespace CourseWork
             Height = height;
             return this;
         }
-        protected double w(double x) {
+        protected double w(double x, bool reverse = false) {
+            if (reverse)
+                return x / cv.ActualWidth * Width;
             return x / Width * cv.ActualWidth;
         }
 
-        protected double h(double y) {
+        protected double h(double y, bool reverse = false) {
+            if (reverse)
+                return y / cv.ActualHeight * Height;
             return y / Height * cv.ActualHeight;
+        }
+
+        public CanvasHelper Clear() {
+            cv.Children.Clear();
+            return this;
         }
 
         public CanvasHelper Line(double x0, double y0, double x1, double y1, double thickness = 1, string color="#000") {
@@ -73,6 +102,17 @@ namespace CourseWork
         public CanvasHelper Image(double x, double y, double width, double height, Brush img) {
             return Shape<Rectangle>(x, y, width, height, 0, null, img);
         }
-        
+
+        public CanvasHelper Text(double x, double y, double fontSize, string t, Brush color = null) {
+            TextBlock text = new TextBlock() {
+                Text = t,
+                FontSize = fontSize,
+                Foreground = color == null ? Helper.ColorBrush("#000") : color,
+            };
+            text.SetValue(Canvas.LeftProperty, w(x));
+            text.SetValue(Canvas.TopProperty, h(y));
+            cv.Children.Add(text);
+            return this;
+        }
     }
 }

@@ -5,9 +5,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CourseWork"
         mc:Ignorable="d"
-        Title="MainWindow" Height="350" Width="525" Closing="Window_Closing">
+        Title="MainWindow" Height="960" Width="1280" Closing="Window_Closing" ResizeMode="CanMinimize">
     <Grid>
-        <Canvas x:Name="canvas" Loaded="Canvas_Loaded">
+        <Canvas x:Name="canvas" Loaded="Canvas_Loaded" Background="Transparent" Focusable="True">
         </Canvas>
 
     </Grid>

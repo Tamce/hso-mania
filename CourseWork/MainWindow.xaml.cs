@@ -32,6 +32,7 @@ namespace CourseWork
             random = new Random();
         }
         private void Canvas_Loaded(object sender, EventArgs e) {
+            canvas.Focus();
             cv = new CanvasHelper(canvas);
             game = new Game(cv);
             game.Initialize();
