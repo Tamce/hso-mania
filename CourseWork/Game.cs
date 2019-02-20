@@ -120,12 +120,33 @@ namespace CourseWork
             }
         }
 
+        int idx = 0;
+        decimal t = 0;
         public void OnDrawPlaying() {
             if (redraw) {
                 redraw = false;
                 cv.Clear();
                 cv.Text(300, 280, 50, "Playing...");
             }
+            t = Convert.ToDecimal(song.bgm.Position.TotalMilliseconds);
+            Note note = (Note)song.notes[idx];
+            while (t > note.time && idx < song.notes.Count - 1) {
+                note = (Note)song.notes[++idx];
+            }
+
+  
+            cv.Clear();
+            cv.Line(0, 480 - 30, 1280, 480 - 30);
+            for (int i = 0; i < 30; ++i) {
+                if (idx + i < song.notes.Count) {
+                    ((Note)song.notes[idx + i]).Draw(cv, t);
+                }
+                if (idx - i - 1 >= 0) {
+                    ((Note)song.notes[idx - i - 1]).Draw(cv, t);
+                }
+            }
+            cv.Text(250, 100, 20, note.time.ToString());
+            cv.Text(250, 150, 20, t.ToString());
         }
 
         public void OnKeyPlaying(KeyEventArgs e) {
