@@ -19,6 +19,7 @@ namespace CourseWork
         }
         public event EventHandler<PointEventArg> MouseLeftButtonUp;
         public event KeyEventHandler KeyDown;
+        public event KeyEventHandler KeyUp;
         public CanvasHelper(Canvas _cv) {
             cv = _cv;
             if (double.IsNaN(cv.Height) && cv.ActualHeight == 0) {
@@ -28,6 +29,11 @@ namespace CourseWork
             Width = cv.ActualWidth;
             cv.PreviewMouseLeftButtonUp += Canvas_MouseLeftButtonUp;
             cv.PreviewKeyDown += Canvas_KeyDown;
+            cv.PreviewKeyUp += Canvas_KeyUp; ;
+        }
+
+        private void Canvas_KeyUp(object sender, KeyEventArgs e) {
+            KeyUp(sender, e);
         }
 
         private void Canvas_KeyDown(object sender, KeyEventArgs e) {
@@ -91,12 +97,12 @@ namespace CourseWork
             return this;
         }
 
-        public CanvasHelper Rectangle(double x0, double y0, double width, double height, double thickness = 1, Brush color = null) {
-            return Shape<Rectangle>(x0, y0, width, height, thickness, color);
+        public CanvasHelper Rectangle(double x0, double y0, double width, double height, double thickness = 1, Brush color = null, Brush fill = null) {
+            return Shape<Rectangle>(x0, y0, width, height, thickness, color, fill);
         }
 
-        public CanvasHelper Ellipse(double x0, double y0, double width, double height, double thickness = 1, Brush color = null) {
-            return Shape<Ellipse>(x0, y0, width, height, thickness, color);
+        public CanvasHelper Ellipse(double x0, double y0, double width, double height, double thickness = 1, Brush color = null, Brush fill = null) {
+            return Shape<Ellipse>(x0, y0, width, height, thickness, color, fill);
         }
 
         public CanvasHelper Image(double x, double y, double width, double height, Brush img) {

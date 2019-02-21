@@ -7,6 +7,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Controls;
 using System.Windows;
 using System.Windows.Input;
+using System.Collections;
 
 namespace CourseWork
 {
@@ -21,15 +22,24 @@ namespace CourseWork
             cv = _cv;
             cv.MouseLeftButtonUp += Canvas_MouseLeftButtonUp;
             cv.KeyDown += CanvasKeyDown;
+            cv.KeyUp += CanvasKeyUp;
             CurrentState = State.Menu;
         }
-
 
         public void Initialize() {
             cv.SetRange(640, 480);
         }
 
+        ArrayList keyStatus = new ArrayList(16);
+        private void CanvasKeyUp(object sender, KeyEventArgs e) {
+            if (keyStatus.Contains(e.Key))
+                keyStatus.Remove(e.Key);
+        }
+
         private void CanvasKeyDown(object sender, KeyEventArgs e) {
+            // 用于确保按下事件仅触发一次
+            if (keyStatus.Contains(e.Key)) return;
+            keyStatus.Add(e.Key);
             Console.WriteLine("Key Down: " + e.Key);
             switch (CurrentState) {
                 case State.Menu:
@@ -59,8 +69,8 @@ namespace CourseWork
                     break;
             }
         }
-
         #endregion
+ 
         public void OnUpdate() {
             switch (CurrentState) {
                 case State.Menu:
@@ -120,6 +130,7 @@ namespace CourseWork
             }
         }
 
+        // idx 是下一个 note 的下标
         int idx = 0;
         decimal t = 0;
         public void OnDrawPlaying() {
@@ -128,33 +139,62 @@ namespace CourseWork
                 cv.Clear();
                 cv.Text(300, 280, 50, "Playing...");
             }
+            cv.Clear();
             t = Convert.ToDecimal(song.bgm.Position.TotalMilliseconds);
+
             Note note = (Note)song.notes[idx];
             while (t > note.time && idx < song.notes.Count - 1) {
                 note = (Note)song.notes[++idx];
             }
-
-  
-            cv.Clear();
-            cv.Line(0, 480 - 30, 1280, 480 - 30);
-            for (int i = 0; i < 30; ++i) {
-                if (idx + i < song.notes.Count) {
-                    ((Note)song.notes[idx + i]).Draw(cv, t);
-                }
-                if (idx - i - 1 >= 0) {
-                    ((Note)song.notes[idx - i - 1]).Draw(cv, t);
-                }
-            }
             cv.Text(250, 100, 20, note.time.ToString());
+            cv.Text(250, 60, 20, combo + " Combo, t="+press+"\tdt=" + error);
+
+            cv.Line(50, 0, 50, 640);
+            cv.Line(50 + 30, 0, 50 + 30, 640);
+            cv.Line(50 + 60, 0, 50 + 60, 640);
+            cv.Line(50 + 90, 0, 50 + 90, 640);
+            cv.Line(50 + 120, 0, 50 + 120, 640);
+            cv.Line(0, 480 - 30, 1280, 480 - 30);
+            for (int i = 0; i < song.notes.Count; ++i) {
+                ((Note)song.notes[i]).Draw(cv, t);
+            }
             cv.Text(250, 150, 20, t.ToString());
         }
 
+        int combo = 0;
+        int error = 0;
+        int press = 0;
         public void OnKeyPlaying(KeyEventArgs e) {
             if (e.Key == Key.Escape) {
+                song.bgm.Pause();
+                //ChangeState(State.Selecting);
+            } else if (e.Key == Key.Oem3) {
                 song.bgm.Stop();
-                ChangeState(State.Selecting);
+                song.bgm.Play();
             } else {
-                Console.WriteLine("Song past: {0}", song.bgm.Position.TotalMilliseconds);
+                Console.WriteLine(e.Key);
+                t = Convert.ToDecimal(song.bgm.Position.TotalMilliseconds);
+                Note note = null;
+                int dt = int.MaxValue;
+                int pivot = idx;
+                // 判定，从 idx 开始分别向前后搜索找最近的
+                for (int i = 0; i < song.notes.Count; ++i) {
+                    note = ((Note)song.notes[i]);
+                    if (!note.IsKeyValid(e.Key, t)) continue;
+                    if (Math.Abs(note.time - t) < dt) {
+                        dt = Convert.ToInt32(Math.Abs(note.time - t));
+                    }
+                }
+
+                press = Convert.ToInt32(t);
+                error = dt;
+                if (dt > 500) return;
+                if (dt <= 400) {
+                    combo++;
+                } else {
+                    combo = 0;
+                }
+                note.catched = true;
             }
         }
 
