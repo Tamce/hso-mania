@@ -159,6 +159,8 @@ namespace CourseWork
                 if (note.status == Note.Status.Free) {
                     if (note.time < t - 200) {
                         note.status = Note.Status.Miss;
+                        // 头判 Miss 情况下尾判直接 Miss
+                        note.endStatus = Note.Status.Miss;
                         combo = 0;
                     }
                 } else if (note.type == Note.Type.Hold && note.endStatus == Note.Status.Free) {
