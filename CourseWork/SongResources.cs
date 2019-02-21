@@ -44,6 +44,7 @@ namespace CourseWork
             using (StringReader sr = new StringReader(Helper.OsuGetSection(osu, "HitObjects"))) {
                 // 丢弃 Section 头
                 string line = sr.ReadLine();
+                // notes = ArrayList.Synchronized(new ArrayList(512));
                 notes = new ArrayList(512);
                 while ((line = sr.ReadLine()) != null) {
                     string[] param = line.Split(new char[] { ',', ':' });

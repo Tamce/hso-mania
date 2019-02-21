@@ -34,13 +34,18 @@ namespace CourseWork
         private void CanvasKeyUp(object sender, KeyEventArgs e) {
             if (keyStatus.Contains(e.Key))
                 keyStatus.Remove(e.Key);
+            switch (CurrentState) {
+                case State.Playing:
+                    OnKeyUpPlaying(e);
+                    break;
+            }
         }
 
         private void CanvasKeyDown(object sender, KeyEventArgs e) {
             // 用于确保按下事件仅触发一次
             if (keyStatus.Contains(e.Key)) return;
             keyStatus.Add(e.Key);
-            Console.WriteLine("Key Down: " + e.Key);
+            //Console.WriteLine("Key Down: " + e.Key);
             switch (CurrentState) {
                 case State.Menu:
                     break;
@@ -62,8 +67,6 @@ namespace CourseWork
                     break;
                 case State.Selecting:
                     OnMouseSelecting(e.point);
-                    break;
-                case State.Playing:
                     break;
                 case State.Result:
                     break;
@@ -129,26 +132,18 @@ namespace CourseWork
                 GameStart();
             }
         }
-
-        // idx 是下一个 note 的下标
-        int idx = 0;
-        decimal t = 0;
+        
         public void OnDrawPlaying() {
             if (redraw) {
                 redraw = false;
                 cv.Clear();
                 cv.Text(300, 280, 50, "Playing...");
             }
+
             cv.Clear();
-            t = Convert.ToDecimal(song.bgm.Position.TotalMilliseconds);
+            decimal t = Convert.ToDecimal(song.bgm.Position.TotalMilliseconds);
 
-            Note note = (Note)song.notes[idx];
-            while (t > note.time && idx < song.notes.Count - 1) {
-                note = (Note)song.notes[++idx];
-            }
-            cv.Text(250, 100, 20, note.time.ToString());
-            cv.Text(250, 60, 20, combo + " Combo, t="+press+"\tdt=" + error);
-
+            // 绘制轨道和 Note
             cv.Line(50, 0, 50, 640);
             cv.Line(50 + 30, 0, 50 + 30, 640);
             cv.Line(50 + 60, 0, 50 + 60, 640);
@@ -158,44 +153,69 @@ namespace CourseWork
             for (int i = 0; i < song.notes.Count; ++i) {
                 ((Note)song.notes[i]).Draw(cv, t);
             }
+
+            // Miss 判定逻辑
+            foreach (Note note in song.notes) {
+                if (note.status == Note.Status.Free) {
+                    if (note.time < t - 200) {
+                        note.status = Note.Status.Miss;
+                        combo = 0;
+                    }
+                } else if (note.type == Note.Type.Hold && note.endStatus == Note.Status.Free) {
+                    if (note.endtime < t - 200) {
+                        note.endStatus = Note.Status.Miss;
+                        combo = 0;
+                    }
+                }
+            }
+
+            // 临时，用作测试的内容
+            // 显示当前时间
             cv.Text(250, 150, 20, t.ToString());
+            // 显示 Combo 数和按键事件处理时间、偏差值
+            cv.Text(250, 60, 20, combo + " Combo, dt=" + error);
+        }
+
+        public int FindClosestFreeNote(ArrayList notes, Key key, decimal t, bool isReleasedEvent, out Note note) {
+            int dt = int.MaxValue;
+            note = null;
+            foreach (Note n in song.notes) {
+                if (!n.IsKeyValid(key, isReleasedEvent)) continue;
+                if (Math.Abs((isReleasedEvent ? n.endtime : n.time) - t) < Math.Abs(dt)) {
+                    note = n;
+                    dt = Convert.ToInt32(t - (isReleasedEvent ? n.endtime : n.time));
+                }
+            }
+            return dt;
         }
 
         int combo = 0;
         int error = 0;
-        int press = 0;
         public void OnKeyPlaying(KeyEventArgs e) {
+            // TODO 重新整理这些按键的逻辑
             if (e.Key == Key.Escape) {
                 song.bgm.Pause();
                 //ChangeState(State.Selecting);
             } else if (e.Key == Key.Oem3) {
-                song.bgm.Stop();
-                song.bgm.Play();
+                Restart();
             } else {
-                Console.WriteLine(e.Key);
-                t = Convert.ToDecimal(song.bgm.Position.TotalMilliseconds);
-                Note note = null;
-                int dt = int.MaxValue;
-                int pivot = idx;
-                // 判定，从 idx 开始分别向前后搜索找最近的
-                for (int i = 0; i < song.notes.Count; ++i) {
-                    note = ((Note)song.notes[i]);
-                    if (!note.IsKeyValid(e.Key, t)) continue;
-                    if (Math.Abs(note.time - t) < dt) {
-                        dt = Convert.ToInt32(Math.Abs(note.time - t));
-                    }
-                }
-
-                press = Convert.ToInt32(t);
+                decimal t = Convert.ToDecimal(song.bgm.Position.TotalMilliseconds);
+                Note note;
+                int dt = FindClosestFreeNote(song.notes, e.Key, t, false, out note);
                 error = dt;
-                if (dt > 500) return;
-                if (dt <= 400) {
-                    combo++;
-                } else {
-                    combo = 0;
-                }
-                note.catched = true;
+                if (note != null)
+                    note.Judge(t, false, ref combo);
             }
+        }
+
+        public void OnKeyUpPlaying(KeyEventArgs e) {
+            // 尾判处理
+            decimal t = Convert.ToDecimal(song.bgm.Position.TotalMilliseconds);
+            Note note;
+            int dt = FindClosestFreeNote(song.notes, e.Key, t, true, out note);
+            error = dt;
+            if (note != null)
+                note.Judge(t, true, ref combo);
         }
 
         SongResources song = null;
@@ -204,6 +224,16 @@ namespace CourseWork
             song = (new SongResources("test.osu")).Load();
             song.bgm.Play();
             ChangeState(State.Playing);
+        }
+
+        public void Restart() {
+            song.bgm.Stop();
+            foreach (Note n in song.notes) {
+                n.status = Note.Status.Free;
+                n.endStatus = Note.Status.Free;
+            }
+            combo = 0;
+            song.bgm.Play();
         }
     }
 }
