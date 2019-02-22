@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Windows.Input;
+using System.Collections;
+using System.Windows.Media;
 
 namespace CourseWork
 {
@@ -67,16 +69,42 @@ namespace CourseWork
             }
         }
 
-        public bool Draw(CanvasHelper cv, decimal now, double factor = 0.7) {
+        public bool Draw(CanvasHelper cv, decimal now, double[] segments, Dictionary<string, object> resources, double factor = 0.7) {
             if (!OnScreen(now, factor)) return false;
             if (type == Type.Tap) {
                 if (status == Status.Free)
-                    cv.Rectangle(50 + column * 30, GetNoteY(time, now, factor), 30, 10, 1, null, Helper.ColorBrush("#666"));
+                    if (column == 0 || column == 3)
+                        cv.Image(GetNoteX(segments), GetNoteY(time, now, factor), GetNoteWidth(segments), GetNoteLength(factor), (Brush)resources["img.note1"]);
+                    else
+                        cv.Image(GetNoteX(segments), GetNoteY(time, now, factor), GetNoteWidth(segments), GetNoteLength(factor), (Brush)resources["img.note2"]);
             }
             else {
-                cv.Rectangle(50 + column * 30, GetNoteY(endtime, now, factor), 30, Convert.ToDouble(endtime - time) * factor, 1, null, Helper.ColorBrush("#666"));
+                Brush b = null;
+                if (column == 0 || column == 3)
+                    b = (Brush)resources["img.note1L"];
+                else
+                    b = (Brush)resources["img.note2L"];
+                if (status == Status.Miss) {
+                    b = b.Clone();
+                    b.Opacity = 0.6;
+                }
+                cv.Image(GetNoteX(segments), GetNoteY(endtime, now, factor), GetNoteWidth(segments), GetNoteLength(factor), b);
             }
             return true;
+        }
+
+        private double GetNoteLength(double factor) {
+            if (type == Type.Tap) {
+                return 10;
+            }
+            return Convert.ToDouble(endtime - time) * factor;
+        }
+
+        private double GetNoteX(double[] segments) {
+            return segments[column];
+        }
+        private double GetNoteWidth(double[] segments) {
+            return segments[column + 1] - GetNoteX(segments);
         }
 
         private double GetNoteY(decimal noteTime, decimal now, double factor) {

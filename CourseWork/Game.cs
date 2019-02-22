@@ -20,6 +20,10 @@ namespace CourseWork
         private CanvasHelper cv;
         bool redraw = true;
 
+        // stage 位置等数据
+        private double stageOffset = 100;
+        private double[] segments = new double[] { 28, 64, 95, 126, 162 };
+
         // 当前选中的歌曲
         SongResources song = null;
 
@@ -35,6 +39,7 @@ namespace CourseWork
         private Dictionary<string, object> resources = new Dictionary<string, object>();
         public void Initialize() {
             cv.SetRange(640, 480);
+            for (int i = 0; i < segments.Length; ++i) segments[i] += stageOffset;
 
             // 初始化加载各种资源
             cv.cv.Background = Helper.ColorBrush("#000");
@@ -42,8 +47,22 @@ namespace CourseWork
             resources["img.bg"] = Helper.loadImage("Skins/bg.jpg");
             resources["img.start"] = Helper.loadImage("Skins/start_btn.png");
             resources["img.bg-black"] = Helper.loadImage("Skins/bg-black.png");
+            resources["img.stage"] = Helper.loadImage("Skins/mania-stage.png");
+            resources["img.note1"] = Helper.loadImage("Skins/mania-note1.png");
+            resources["img.note1L"] = Helper.loadImage("Skins/mania-note1L.png");
+            resources["img.note2"] = Helper.loadImage("Skins/mania-note2.png");
+            resources["img.note2L"] = Helper.loadImage("Skins/mania-note2L.png");
+            resources["img.light"] = Helper.loadImage("Skins/mania-stage-light.png");
+            for (int i = 0; i <= 9; ++i)
+                resources["img.score-" + i] = Helper.loadImage("Skins/score-" + i + ".png");
+            resources["img.key1"] = Helper.loadImage("Skins/key1.png");
+            resources["img.key2"] = Helper.loadImage("Skins/key2.png");
+            resources["img.key1D"] = Helper.loadImage("Skins/key1D.png");
+            resources["img.key2D"] = Helper.loadImage("Skins/key2D.png");
+
             ((Brush)resources["img.bg"]).Opacity = 0;
             ((Brush)resources["img.start"]).Opacity = 0;
+            ((Brush)resources["img.light"]).Opacity = 0.7;
             LoadSongList();
         }
 
@@ -251,26 +270,55 @@ namespace CourseWork
         public void OnMouseSelecting(Point p) {
             GameStart();
         }
-        
+
         public void OnDrawPlaying() {
-            if (redraw) {
-                redraw = false;
-                cv.Clear();
-                cv.Text(300, 280, 50, "Playing...");
+            cv.Clear();
+
+
+            decimal t = Convert.ToDecimal(song.bgm.Position.TotalMilliseconds);
+            // 绘制轨道和 Note
+            for (int i = 0; i < song.notes.Count; ++i) {
+                song.notes[i].Draw(cv, t, segments, resources);
             }
 
-            cv.Clear();
-            decimal t = Convert.ToDecimal(song.bgm.Position.TotalMilliseconds);
+            cv.Image(stageOffset, 0, 203, 480, (Brush)resources["img.stage"]);
+            foreach (double x in segments) {
+                cv.Line(x, 0, x, 406);
+            }
 
-            // 绘制轨道和 Note
-            cv.Line(50, 0, 50, 640);
-            cv.Line(50 + 30, 0, 50 + 30, 640);
-            cv.Line(50 + 60, 0, 50 + 60, 640);
-            cv.Line(50 + 90, 0, 50 + 90, 640);
-            cv.Line(50 + 120, 0, 50 + 120, 640);
-            cv.Line(0, 480 - 30, 1280, 480 - 30);
-            for (int i = 0; i < song.notes.Count; ++i) {
-                song.notes[i].Draw(cv, t);
+            // 绘制轨道光
+            for (int i = 0; i < 4; ++i) {
+                if ((keyPressed & (1 << i))> 0) {
+                    cv.Image(segments[i], 406 - 350, segments[i + 1] - segments[i], 350, (Brush)resources["img.light"]);
+                    if (i == 0 || i == 3)
+                        cv.Image(segments[i], 413, segments[i + 1] - segments[i], 480 - 413, (Brush)resources["img.key1D"]);
+                    else
+                        cv.Image(segments[i], 413, segments[i + 1] - segments[i], 480 - 413, (Brush)resources["img.key2D"]);
+                } else {
+                    if (i == 0 || i == 3)
+                        cv.Image(segments[i], 413, segments[i + 1] - segments[i], 480 - 413, (Brush)resources["img.key1"]);
+                    else
+                        cv.Image(segments[i], 413, segments[i + 1] - segments[i], 480 - 413, (Brush)resources["img.key2"]);
+                }
+            }
+
+            // 绘制 combo
+            {
+                int c = combo;
+                // 求总位数算位置
+                int n = 0;
+                do {
+                    c /= 10;
+                    n++;
+                } while (c != 0);
+
+                c = combo;
+                int i = 0;
+                do {
+                    cv.Image(segments[2] - 14 + 6 * n - 25 * i, 70, 25, 25, (Brush)resources["img.score-" + c % 10]);
+                    ++i;
+                    c /= 10;
+                } while (c != 0);
             }
 
             // Miss 判定逻辑
@@ -289,12 +337,6 @@ namespace CourseWork
                     }
                 }
             }
-
-            // 临时，用作测试的内容
-            // 显示当前时间
-            cv.Text(250, 150, 20, t.ToString());
-            // 显示 Combo 数和按键事件处理时间、偏差值
-            cv.Text(250, 60, 20, combo + " Combo, dt=" + error);
         }
 
         public int FindClosestFreeNote(List<Note> notes, Key key, decimal t, bool isReleasedEvent, out Note note) {
@@ -312,6 +354,7 @@ namespace CourseWork
 
         int combo = 0;
         int error = 0;
+        int keyPressed = 0;
         public void OnKeyPlaying(KeyEventArgs e) {
             // TODO 重新整理这些按键的逻辑
             if (e.Key == Key.Escape) {
@@ -320,6 +363,11 @@ namespace CourseWork
             } else if (e.Key == Key.Oem3) {
                 Restart();
             } else {
+                if (e.Key == Key.D) keyPressed |= 1;
+                else if (e.Key == Key.F) keyPressed |= 2;
+                else if (e.Key == Key.J) keyPressed |= 4;
+                else if (e.Key == Key.K) keyPressed |= 8;
+                else return;
                 decimal t = Convert.ToDecimal(song.bgm.Position.TotalMilliseconds);
                 Note note;
                 int dt = FindClosestFreeNote(song.notes, e.Key, t, false, out note);
@@ -330,6 +378,11 @@ namespace CourseWork
         }
 
         public void OnKeyUpPlaying(KeyEventArgs e) {
+            if (e.Key == Key.D) keyPressed &= ~1;
+            else if (e.Key == Key.F) keyPressed &= ~2;
+            else if (e.Key == Key.J) keyPressed &= ~4;
+            else if (e.Key == Key.K) keyPressed &= ~8;
+            else return;
             // 尾判处理
             decimal t = Convert.ToDecimal(song.bgm.Position.TotalMilliseconds);
             Note note;
@@ -345,12 +398,13 @@ namespace CourseWork
             song.bgm.Position = TimeSpan.Zero;
             // 确保歌曲加载完毕
             while (!song.bgm.NaturalDuration.HasTimeSpan) System.Threading.Thread.Sleep(5);
-            song.bgm.Play();
             ChangeState(State.Playing);
+            previewing = song.bgm;
+            previewing.Play();
         }
 
         public void Restart() {
-            song.bgm.Stop();
+            previewing.Stop();
             foreach (Note n in song.notes) {
                 n.status = Note.Status.Free;
                 n.endStatus = Note.Status.Free;
