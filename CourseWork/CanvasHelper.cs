@@ -69,7 +69,7 @@ namespace CourseWork
             return this;
         }
 
-        public CanvasHelper Line(double x0, double y0, double x1, double y1, double thickness = 1, string color="#000") {
+        public CanvasHelper Line(double x0, double y0, double x1, double y1, double thickness = 1, string color="#fff") {
             cv.Children.Add(new Line() {
                 Stroke = new SolidColorBrush((Color)ColorConverter.ConvertFromString(color)),
                 StrokeThickness = thickness,
@@ -85,7 +85,7 @@ namespace CourseWork
             Shape shape = new T() {
                 Width = w(width),
                 Height = h(height),
-                Stroke = color == null ? Helper.ColorBrush("#000") : color,
+                Stroke = color == null ? Helper.ColorBrush("#fff") : color,
                 StrokeThickness = thickness,
             };
             if (fill != null) {
@@ -109,12 +109,16 @@ namespace CourseWork
             return Shape<Rectangle>(x, y, width, height, 0, null, img);
         }
 
-        public CanvasHelper Text(double x, double y, double fontSize, string t, Brush color = null) {
+        public CanvasHelper Text(double x, double y, double fontSize, string t, Brush color = null, double width = -1) {
             TextBlock text = new TextBlock() {
                 Text = t,
                 FontSize = fontSize,
-                Foreground = color == null ? Helper.ColorBrush("#000") : color,
+                Foreground = color == null ? Helper.ColorBrush("#fff") : color,
+                TextAlignment = TextAlignment.Center
             };
+            if (width > 0) {
+                text.Width = w(width);
+            }
             text.SetValue(Canvas.LeftProperty, w(x));
             text.SetValue(Canvas.TopProperty, h(y));
             cv.Children.Add(text);

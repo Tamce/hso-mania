@@ -7,6 +7,7 @@ using System.Windows.Media;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using System.Windows;
+using System.Threading;
 
 namespace CourseWork
 {
@@ -15,6 +16,11 @@ namespace CourseWork
         static public MediaPlayer loadSound(string wav) {
             MediaPlayer sound = new MediaPlayer();
             sound.Open(new Uri(wav, UriKind.RelativeOrAbsolute));
+            sound.MediaFailed += (sender, e) => {
+                throw new Exception("加载歌曲文件失败！ file: " + wav, e.ErrorException);
+            };
+            // 之前因为没监听 MediaFailed 然后在这里等加载死循环(x
+            // while (!sound.NaturalDuration.HasTimeSpan) Thread.Sleep(5);
             return sound;
         }
 
@@ -23,8 +29,10 @@ namespace CourseWork
             return new ImageBrush(bm);
         }
 
-        static public Brush ColorBrush(string rgb) {
-            return new SolidColorBrush((Color)ColorConverter.ConvertFromString(rgb));
+        static public Brush ColorBrush(string rgb, double opacity = 1) {
+            Brush b = new SolidColorBrush((Color)ColorConverter.ConvertFromString(rgb));
+            b.Opacity = opacity;
+            return b;
         }
 
         static public bool PointIn(Point p, double x1, double y1, double x2, double y2) {
@@ -41,7 +49,7 @@ namespace CourseWork
             int start = osudata.IndexOf("[" + section + "]");
             if (osudata.IndexOf("[", start + 1) < 0)
                 return osudata.Substring(start).Trim();
-            return osudata.Substring(start, osudata.IndexOf("[", start + 1) - start).Trim();
+            return osudata.Substring(start, osudata.IndexOf("\n[", start + 1) - start).Trim();
         }
     }
 }

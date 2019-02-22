@@ -70,10 +70,12 @@ namespace CourseWork
         public bool Draw(CanvasHelper cv, decimal now, double factor = 0.7) {
             if (!OnScreen(now, factor)) return false;
             if (type == Type.Tap) {
-                cv.Rectangle(50 + column * 30, GetNoteY(time, now, factor), 30, 10, 1, null, Helper.ColorBrush("#666"));
+                if (status == Status.Free)
+                    cv.Rectangle(50 + column * 30, GetNoteY(time, now, factor), 30, 10, 1, null, Helper.ColorBrush("#666"));
             }
-            else
+            else {
                 cv.Rectangle(50 + column * 30, GetNoteY(endtime, now, factor), 30, Convert.ToDouble(endtime - time) * factor, 1, null, Helper.ColorBrush("#666"));
+            }
             return true;
         }
 

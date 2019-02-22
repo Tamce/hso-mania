@@ -19,39 +19,70 @@ namespace CourseWork
 {
     class SongResources
     {
-        public readonly string osu;
-        private string timing;
-        
-        public SongResources(string osufile) {
-            try {
-                using (StreamReader sr = new StreamReader(osufile)) {
-                    osu = sr.ReadToEnd();
-                }
-            } catch (Exception e) {
-                throw new Exception("无法读取谱面文件 " + osufile, e);
-            }
-            if (Helper.OsuGetKey(osu, "General", "Mode") != "3" || Helper.OsuGetKey(osu, "Difficulty", "CircleSize") != "4") {
-                throw new Exception("谱面格式不是 osu!mania 4K 格式");
-            }
-            timing = Helper.OsuGetSection(osu, "TimingPoints");
+        public List<FileInfo> difficuties;
+        public ImageBrush bg;
+        public readonly string name;
+        public readonly DirectoryInfo dir;
+        public SongResources(DirectoryInfo songDir) {
+            dir = songDir;
+            difficuties = new List<FileInfo>(songDir.GetFiles("*.osu"));
+            FilterValidMania4K();
+            // 载入一下背景图用于选曲和游戏内
+            string events = Helper.OsuGetSection(metadata, "Events");
+            int start = events.IndexOf("0,0,\"");
+            bg = Helper.loadImage(songDir.FullName + "/" + events.Substring(start + 5, events.IndexOf('"', start + 5) - start - 5));
+            // 把谱面编号去掉，后面一个分段就是歌名了
+            name = songDir.Name.Substring(songDir.Name.IndexOf(' ') + 1);
         }
 
-        public ArrayList notes;
+        private string metadata;
+        private string timing;
+        public List<Note> notes;
         public MediaPlayer bgm;
-        public MediaPlayer se;
-        public SongResources Load() {
-            // 先读入 note 数据
-            using (StringReader sr = new StringReader(Helper.OsuGetSection(osu, "HitObjects"))) {
+
+        public void FilterValidMania4K() {
+            difficuties.RemoveAll((FileInfo f) => {
+                try {
+                    using (StreamReader sr = f.OpenText()) {
+                        metadata = sr.ReadToEnd();
+                    }
+                } catch (Exception e) {
+                    Console.WriteLine("无法读取谱面文件，忽略之，相关谱面文件: \n{0}", f.Name);
+                    return true;
+                }
+                if (Helper.OsuGetKey(metadata, "General", "Mode") != "3" || Helper.OsuGetKey(metadata, "Difficulty", "CircleSize") != "4") {
+                    Console.WriteLine("谱面不是 osu!mania 4K 格式，忽略之，相关谱面文件：\n{0}", f.Name);
+                    return true;
+                }
+                return false;
+            });
+        }
+
+        public SongResources LoadMetaAndBgm(int difficultyIndex) {
+            using (StreamReader sr = difficuties[difficultyIndex].OpenText()) {
+                metadata = sr.ReadToEnd();
+            }
+            timing = Helper.OsuGetSection(metadata, "TimingPoints");
+            bgm = Helper.loadSound(dir.FullName + "/" + Helper.OsuGetKey(metadata, "General", "AudioFilename"));
+            return this;
+        }
+
+        // 读取并解析谱面具体内容，为游玩做最后准备
+        public SongResources LoadAll(int difficultyIndex) {
+            LoadMetaAndBgm(difficultyIndex);
+
+            // 解析 note 数据
+            using (StringReader sr = new StringReader(Helper.OsuGetSection(metadata, "HitObjects"))) {
                 // 丢弃 Section 头
                 string line = sr.ReadLine();
-                // notes = ArrayList.Synchronized(new ArrayList(512));
-                notes = new ArrayList(512);
+                notes = new List<Note>(512);
                 while ((line = sr.ReadLine()) != null) {
                     string[] param = line.Split(new char[] { ',', ':' });
                     Note note = null;
-                    if (param[3] == "1") {
+                    int type = Convert.ToInt32(param[3]);
+                    if ((type & 1) != 0) {
                         note = new Note(Convert.ToInt32(param[0]), Convert.ToDecimal(param[2]), Note.Type.Tap);
-                    } else if (param[3] == "128") {
+                    } else if ((type & 128) != 0) {
                         note = new Note(Convert.ToInt32(param[0]), Convert.ToDecimal(param[2]), Note.Type.Hold, Convert.ToDecimal(param[5]));
                     } else {
                         throw new Exception("谱面物件含有无法解析的部分！\nline: " + line);
@@ -59,10 +90,6 @@ namespace CourseWork
                     notes.Add(note);
                 }
             }
-
-            // 读入音频和图像等文件
-            bgm = Helper.loadSound(Helper.OsuGetKey(osu, "General", "AudioFilename"));
-            se = Helper.loadSound("se.wav");
             return this;
         }
     }
