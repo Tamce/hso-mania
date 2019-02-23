@@ -10,6 +10,7 @@ using System.Windows.Input;
 using System.Collections;
 using System.Windows.Media;
 using System.IO;
+using System.Windows.Shapes;
 
 namespace CourseWork
 {
@@ -19,6 +20,13 @@ namespace CourseWork
         private State CurrentState;
         private CanvasHelper cv;
         bool redraw = true;
+
+        // 速度系数
+        private double factor = 0.7;
+
+        // 需要绘制的判定 UI
+        string judgeUI = null;
+        int judgeUITimeout = 10;
 
         // stage 位置等数据
         private double stageOffset = 100;
@@ -59,6 +67,10 @@ namespace CourseWork
             resources["img.key2"] = Helper.loadImage("Skins/key2.png");
             resources["img.key1D"] = Helper.loadImage("Skins/key1D.png");
             resources["img.key2D"] = Helper.loadImage("Skins/key2D.png");
+            resources["wav.se"] = Helper.loadSound("Skins/se.wav");
+            foreach (string s in new string[] { "0", "50", "100", "200", "300", "300g"}) {
+                resources["img.hit-" + s] = Helper.loadImage("Skins/hit-" + s + ".png");
+            }
 
             ((Brush)resources["img.bg"]).Opacity = 0;
             ((Brush)resources["img.start"]).Opacity = 0;
@@ -278,7 +290,7 @@ namespace CourseWork
             decimal t = Convert.ToDecimal(song.bgm.Position.TotalMilliseconds);
             // 绘制轨道和 Note
             for (int i = 0; i < song.notes.Count; ++i) {
-                song.notes[i].Draw(cv, t, segments, resources);
+                song.notes[i].Draw(cv, t, segments, resources, factor);
             }
 
             cv.Image(stageOffset, 0, 203, 480, (Brush)resources["img.stage"]);
@@ -315,7 +327,7 @@ namespace CourseWork
                 c = combo;
                 int i = 0;
                 do {
-                    cv.Image(segments[2] - 14 + 6 * n - 25 * i, 70, 25, 25, (Brush)resources["img.score-" + c % 10]);
+                    cv.Image(segments[2] - 22 + 12 * n - 25 * i, 70, 25, 25, (Brush)resources["img.score-" + c % 10]);
                     ++i;
                     c /= 10;
                 } while (c != 0);
@@ -337,6 +349,17 @@ namespace CourseWork
                     }
                 }
             }
+
+            // 绘制判定 UI
+            if (judgeUI != null) {
+                double xl = segments[1] - (segments[2] - segments[1]) / 2;
+                ((Brush)resources["img.hit-" + judgeUI]).Opacity = (double)judgeUITimeout / 10;
+                double scale = judgeUITimeout;
+                cv.Image(xl - scale, 300 - scale, (segments[4] + segments[3]) / 2 - xl + 2 * scale, 20 + 2*scale, (Brush)resources["img.hit-" + judgeUI]);
+                if (--judgeUITimeout < 5) {
+                    ResetJudgeUI();
+                }
+            }
         }
 
         public int FindClosestFreeNote(List<Note> notes, Key key, decimal t, bool isReleasedEvent, out Note note) {
@@ -355,6 +378,7 @@ namespace CourseWork
         int combo = 0;
         int error = 0;
         int keyPressed = 0;
+
         public void OnKeyPlaying(KeyEventArgs e) {
             // TODO 重新整理这些按键的逻辑
             if (e.Key == Key.Escape) {
@@ -362,6 +386,10 @@ namespace CourseWork
                 //ChangeState(State.Selecting);
             } else if (e.Key == Key.Oem3) {
                 Restart();
+            } else if (e.Key == Key.F3) {
+                if (factor > 0.2) factor -= 0.04;
+            } else if (e.Key == Key.F4) {
+                if (factor < 3) factor += 0.04;
             } else {
                 if (e.Key == Key.D) keyPressed |= 1;
                 else if (e.Key == Key.F) keyPressed |= 2;
@@ -369,11 +397,18 @@ namespace CourseWork
                 else if (e.Key == Key.K) keyPressed |= 8;
                 else return;
                 decimal t = Convert.ToDecimal(song.bgm.Position.TotalMilliseconds);
+                // Key effect
+                ((MediaPlayer)resources["wav.se"]).Position = TimeSpan.Zero;
+                ((MediaPlayer)resources["wav.se"]).Play();
                 Note note;
                 int dt = FindClosestFreeNote(song.notes, e.Key, t, false, out note);
                 error = dt;
-                if (note != null)
-                    note.Judge(t, false, ref combo);
+                if (note != null) {
+                    if (null != note.Judge(t, false, ref combo)) {
+                        // 按键判定有效，显示判定 UI
+                        ShowJudgeUI(note.status);
+                    }
+                }
             }
         }
 
@@ -388,8 +423,37 @@ namespace CourseWork
             Note note;
             int dt = FindClosestFreeNote(song.notes, e.Key, t, true, out note);
             error = dt;
-            if (note != null)
-                note.Judge(t, true, ref combo);
+            if (note != null) {
+                if (null != note.Judge(t, true, ref combo)) {
+                    // 按键判定有效，显示判定 UI
+                    ShowJudgeUI(note.endStatus);
+                }
+            }
+        }
+
+        public void ResetJudgeUI() {
+            judgeUITimeout = 13;
+            judgeUI = null;
+        }
+        public void ShowJudgeUI(Note.Status status) {
+            ResetJudgeUI();
+            switch (status) {
+                case Note.Status.PGreat:
+                    judgeUI = "300g";
+                    break;
+                case Note.Status.Great:
+                    judgeUI = "300";
+                    break;
+                case Note.Status.Good:
+                    judgeUI = "200";
+                    break;
+                case Note.Status.Bad:
+                    judgeUI = "50";
+                    break;
+                case Note.Status.Miss:
+                    judgeUI = "0";
+                    break;
+            }
         }
 
         // 先加载各种相关资源并设置变量，然后切换状态到 Playing

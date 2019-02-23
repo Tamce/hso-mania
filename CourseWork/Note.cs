@@ -11,7 +11,7 @@ namespace CourseWork
     class Note
     {
         public enum Type { Tap, Hold };
-        public enum Status { Free, Perfect, Great, Good, Miss };
+        public enum Status { Free, PGreat, Great, Good, Bad, Miss };
         public Status status = Status.Free;
         // 只对长押有效，表示尾判状态
         public Status endStatus = Status.Free;
@@ -37,36 +37,46 @@ namespace CourseWork
         }
 
         // 执行判定，不判定因超时引起的 Miss 判定
-        public void Judge(decimal t, bool isReleasedEvent, ref int combo) {
+        public Status? Judge(decimal t, bool isReleasedEvent, ref int combo) {
             decimal dt = t - (isReleasedEvent ? endtime : time);
             Console.WriteLine("dt: {0}", dt);
             // 松手判定
             if (isReleasedEvent) {
                 // 头判没判上，忽略尾判
-                if (status == Status.Free || status == Status.Miss) return;
+                if (status == Status.Free || status == Status.Miss) return null;
                 // 松手太早，判定 Miss
                 if (dt < -200) {
                     combo = 0;
                     endStatus = Status.Miss;
-                    return;
+                    return endStatus;
                 }
-                if (Math.Abs(dt) <= 200) {
-                    endStatus = Status.Perfect;
-                    combo++;
-                    return;
-                }
+                return JudgeInterval(ref endStatus, ref combo, dt);
             } else {
                 if (dt < -200) {
                     // 太早的忽略
-                    return;
+                    return null;
                 }
-                if (Math.Abs(dt) <= 200) {
-                    status = Status.Perfect;
-                    combo++;
-                    Console.WriteLine("Combo++ : {0}", combo);
-                    return;
-                }
+                return JudgeInterval(ref status, ref combo, dt);   
             }
+        }
+
+        // 不进行 Miss 判定
+        private Status? JudgeInterval(ref Status s, ref int combo, decimal _dt) {
+            decimal dt = Math.Abs(_dt);
+            if (dt <= 20) {
+                s = Status.PGreat;
+            } else if (dt <= 50) {
+                s = Status.Great;
+            } else if (dt <= 100) {
+                s = Status.Good;
+            } else if (dt <= 200) {
+                s = Status.Bad;
+                combo = -1;
+            } else {
+                return null;
+            }
+            combo++;
+            return s;
         }
 
         public bool Draw(CanvasHelper cv, decimal now, double[] segments, Dictionary<string, object> resources, double factor = 0.7) {
@@ -84,7 +94,7 @@ namespace CourseWork
                     b = (Brush)resources["img.note1L"];
                 else
                     b = (Brush)resources["img.note2L"];
-                if (status == Status.Miss) {
+                if (status == Status.Miss || endStatus == Status.Miss) {
                     b = b.Clone();
                     b.Opacity = 0.6;
                 }
@@ -97,7 +107,7 @@ namespace CourseWork
             if (type == Type.Tap) {
                 return 10;
             }
-            return Convert.ToDouble(endtime - time) * factor;
+            return Convert.ToDouble(endtime - time) * factor + 10;
         }
 
         private double GetNoteX(double[] segments) {
