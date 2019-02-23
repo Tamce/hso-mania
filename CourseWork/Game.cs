@@ -12,6 +12,7 @@ using System.Windows.Media;
 using System.IO;
 using System.Windows.Shapes;
 
+// TODO 成绩结算页面，暂定和返回逻辑
 namespace CourseWork
 {
     class Game
@@ -23,6 +24,15 @@ namespace CourseWork
 
         // 速度系数
         private double factor = 0.7;
+
+        // 分数
+        int score = 0;
+        // 百分比
+        double percent = 0;
+        // Combo 数
+        int combo = 0;
+        // 按下的键，位或，从低位到高位分别是DFJK
+        int keyPressed = 0;
 
         // 需要绘制的判定 UI
         string judgeUI = null;
@@ -54,6 +64,7 @@ namespace CourseWork
             cv.Text(320 - 80, 240 - 40, 80, "Loading...", Helper.ColorBrush("#fff"));
             resources["img.bg"] = Helper.loadImage("Skins/bg.jpg");
             resources["img.start"] = Helper.loadImage("Skins/start_btn.png");
+            resources["wav.startup"] = Helper.loadSound("Skins/startup.mp3");
             resources["img.bg-black"] = Helper.loadImage("Skins/bg-black.png");
             resources["img.stage"] = Helper.loadImage("Skins/mania-stage.png");
             resources["img.note1"] = Helper.loadImage("Skins/mania-note1.png");
@@ -125,6 +136,10 @@ namespace CourseWork
                 case State.Selecting:
                     OnMouseSelecting(e.point);
                     break;
+                case State.Playing:
+                    // TODO 临时用于测试的
+                    ChangeState(State.Result);
+                    break;
                 case State.Result:
                     break;
             }
@@ -143,6 +158,7 @@ namespace CourseWork
                     OnDrawPlaying();
                     break;
                 case State.Result:
+                    OnDrawResult();
                     break;
             }
         }
@@ -161,7 +177,6 @@ namespace CourseWork
 
         public void OnDrawMenu() {
             // 绘制菜单，只用绘制一次
-            // TODO 用更好看的东西绘制
             if (redraw) {
                 cv.Clear();
                 if (fade) {
@@ -171,6 +186,8 @@ namespace CourseWork
                 }
                 cv.Image(0, 0, 640, 480, (Brush)resources["img.bg"]);
                 cv.Image(220, 140, 200, 200, (Brush)resources["img.start"]);
+                previewing = (MediaPlayer)resources["wav.startup"];
+                previewing.Play();
                 redraw = false;
             }
             if (((Brush)resources["img.bg"]).Opacity < 0.8) {
@@ -196,7 +213,6 @@ namespace CourseWork
         public void OnDrawSelecting() {
             if (redraw) {
                 redraw = false;
-                // TODO 用更好看的东西绘制
                 cv.Clear();
                 if (songList.Count == 0) {
                     cv.Text(320 - 80, 240 - 40, 80, "没有发现任何歌曲...");
@@ -283,11 +299,39 @@ namespace CourseWork
             GameStart();
         }
 
+        public void OnDrawResult() {
+            cv.Clear();
+            Brush bg = song.bg;
+            Brush stage = ((Brush)resources["img.stage"]);
+            if (redraw) {
+                // 第一次绘制的时候先绘制 Playing 的淡出动画
+                cv.Image(0, 0, 640, 480, bg);
+                cv.Image(stageOffset, 0, 203, 480, stage);
+                stage.Opacity = 1;
+                if (stage.Opacity > 0) {
+                    stage.Opacity -= 0.05;
+                } else {
+                    // 直到淡出动画结束再淡入并停止绘制
+                    redraw = false;
+                    fade = true;
+
+                    
+                }
+            }
+        }
+
         public void OnDrawPlaying() {
             cv.Clear();
 
 
             decimal t = Convert.ToDecimal(song.bgm.Position.TotalMilliseconds);
+
+            // 歌曲结束判定
+            if (song.bgm.Position.TotalMilliseconds > song.bgm.NaturalDuration.TimeSpan.TotalMilliseconds - 100) {
+                ChangeState(State.Result);
+                return;
+            }
+
             // 绘制背景图片先
             Brush bg = song.bg.Clone();
             bg.Opacity = 0.5;
@@ -318,6 +362,32 @@ namespace CourseWork
                 }
             }
 
+            // 绘制分数和完成率
+            {
+                int s = score;
+                // 一共七位数字
+                for (int i = 0; i < 7; ++i) {
+                    cv.Image(640 - 35  - 25 * i, 8, 25, 25, (Brush)resources["img.score-" + s % 10]);
+                    s /= 10;
+                }
+                // 小数部分
+                s = (int)(percent * 100 - (int)percent);
+                for (int i = 0; i < 2; ++i) {
+                    cv.Image(640 - 50 - 20 * i, 41, 20, 20, (Brush)resources["img.score-" + s % 10]);
+                    s /= 10;
+                }
+                // 小数点
+                cv.Text(640 - 50 - 20 - 10, 48, 20, "●", Helper.ColorBrush("#fff", 0.8));
+                // 百分号
+                cv.Text(640 - 25, 35, 45, "%");
+                // 整数部分
+                s = (int)percent;
+                for (int i = 0; i < 2; ++i) {
+                    cv.Image(640 - 50 - 40 - 8 - 20 * i, 41, 20, 20, (Brush)resources["img.score-" + s % 10]);
+                    s /= 10;
+                }
+            }
+
             // 绘制 combo
             {
                 int c = combo;
@@ -345,11 +415,13 @@ namespace CourseWork
                         // 头判 Miss 情况下尾判直接 Miss
                         note.endStatus = Note.Status.Miss;
                         combo = 0;
+                        ShowJudgeUI(Note.Status.Miss);
                     }
                 } else if (note.type == Note.Type.Hold && note.endStatus == Note.Status.Free) {
                     if (note.endtime < t - 200) {
                         note.endStatus = Note.Status.Miss;
                         combo = 0;
+                        ShowJudgeUI(Note.Status.Miss);
                     }
                 }
             }
@@ -379,9 +451,6 @@ namespace CourseWork
             return dt;
         }
 
-        int combo = 0;
-        int error = 0;
-        int keyPressed = 0;
 
         public void OnKeyPlaying(KeyEventArgs e) {
             // TODO 重新整理这些按键的逻辑
@@ -406,9 +475,8 @@ namespace CourseWork
                 ((MediaPlayer)resources["wav.se"]).Play();
                 Note note;
                 int dt = FindClosestFreeNote(song.notes, e.Key, t, false, out note);
-                error = dt;
                 if (note != null) {
-                    if (null != note.Judge(t, false, ref combo)) {
+                    if (null != note.Judge(t, false, ref combo, ref score, ref percent, song.notes.Count)) {
                         // 按键判定有效，显示判定 UI
                         ShowJudgeUI(note.status);
                     }
@@ -426,9 +494,8 @@ namespace CourseWork
             decimal t = Convert.ToDecimal(song.bgm.Position.TotalMilliseconds);
             Note note;
             int dt = FindClosestFreeNote(song.notes, e.Key, t, true, out note);
-            error = dt;
             if (note != null) {
-                if (null != note.Judge(t, true, ref combo)) {
+                if (null != note.Judge(t, true, ref combo, ref score, ref percent, song.notes.Count)) {
                     // 按键判定有效，显示判定 UI
                     ShowJudgeUI(note.endStatus);
                 }
@@ -460,6 +527,15 @@ namespace CourseWork
             }
         }
 
+        public void DrawScore(double x, double y, int size) {
+            int s = score;
+            // 一共七位数字
+            for (int i = 0; i < 7; ++i) {
+                cv.Image(x - size * i, y, size, size, (Brush)resources["img.score-" + s % 10]);
+                s /= 10;
+            }
+        }
+
         // 先加载各种相关资源并设置变量，然后切换状态到 Playing
         public void GameStart() {
             song.LoadAll(difficultyIndex);
@@ -478,6 +554,8 @@ namespace CourseWork
                 n.endStatus = Note.Status.Free;
             }
             combo = 0;
+            score = 0;
+            percent = 0;
             song.bgm.Play();
         }
     }

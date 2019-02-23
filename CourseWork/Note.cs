@@ -37,7 +37,7 @@ namespace CourseWork
         }
 
         // 执行判定，不判定因超时引起的 Miss 判定
-        public Status? Judge(decimal t, bool isReleasedEvent, ref int combo) {
+        public Status? Judge(decimal t, bool isReleasedEvent, ref int combo, ref int score, ref double percent, int noteCount) {
             decimal dt = t - (isReleasedEvent ? endtime : time);
             Console.WriteLine("dt: {0}", dt);
             // 松手判定
@@ -50,27 +50,37 @@ namespace CourseWork
                     endStatus = Status.Miss;
                     return endStatus;
                 }
-                return JudgeInterval(ref endStatus, ref combo, dt);
+                return JudgeInterval(ref endStatus, ref combo, dt, ref score, ref percent, noteCount);
             } else {
                 if (dt < -200) {
                     // 太早的忽略
                     return null;
                 }
-                return JudgeInterval(ref status, ref combo, dt);   
+                return JudgeInterval(ref status, ref combo, dt, ref score, ref percent, noteCount);   
             }
         }
 
         // 不进行 Miss 判定
-        private Status? JudgeInterval(ref Status s, ref int combo, decimal _dt) {
+        private Status? JudgeInterval(ref Status s, ref int combo, decimal _dt, ref int score, ref double percent, int noteCount) {
             decimal dt = Math.Abs(_dt);
+            double pg = 100.0 / noteCount;
+            int spg = 1000000 / noteCount;
             if (dt <= 20) {
                 s = Status.PGreat;
+                percent += pg;
+                score += spg;
             } else if (dt <= 50) {
                 s = Status.Great;
+                percent += 0.97 * pg;
+                score += spg;
             } else if (dt <= 100) {
                 s = Status.Good;
+                percent += 0.8 * pg;
+                score += (int)(spg * 0.85);
             } else if (dt <= 200) {
                 s = Status.Bad;
+                percent += 0.7 * pg;
+                score += (int)(spg * 0.7);
                 combo = -1;
             } else {
                 return null;

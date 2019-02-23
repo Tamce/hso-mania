@@ -38,6 +38,7 @@ namespace CourseWork
         private string metadata;
         private string timing;
         public List<Note> notes;
+        public int totalNoteCount;
         public MediaPlayer bgm;
 
         public void FilterValidMania4K() {
@@ -88,6 +89,10 @@ namespace CourseWork
                         throw new Exception("谱面物件含有无法解析的部分！\nline: " + line);
                     }
                     notes.Add(note);
+                }
+                totalNoteCount = notes.Count;
+                foreach (Note n in notes) {
+                    if (n.type == Note.Type.Hold) totalNoteCount++;
                 }
             }
             return this;
