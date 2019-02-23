@@ -240,13 +240,13 @@ namespace CourseWork
 
             // 预览音乐的播放，因为可能需要等待音乐加载所以用 previewing 检查
             if (previewing == null && song.bgm.NaturalDuration.HasTimeSpan) {
-                song.bgm.Position = TimeSpan.FromSeconds(song.bgm.NaturalDuration.TimeSpan.TotalSeconds / 4);
+                song.bgm.Position = TimeSpan.FromSeconds(song.bgm.NaturalDuration.TimeSpan.TotalSeconds / 5);
                 song.bgm.Play();
                 previewing = song.bgm;
             }
             // 循环播放
             if (previewing != null && previewing.Position.TotalSeconds >= previewing.NaturalDuration.TimeSpan.TotalSeconds - 5) {
-                previewing.Position = TimeSpan.FromSeconds(previewing.NaturalDuration.TimeSpan.TotalSeconds / 4);
+                previewing.Position = TimeSpan.FromSeconds(previewing.NaturalDuration.TimeSpan.TotalSeconds / 5);
             }
 
             // 歌曲封面图的淡出动画
@@ -288,14 +288,18 @@ namespace CourseWork
 
 
             decimal t = Convert.ToDecimal(song.bgm.Position.TotalMilliseconds);
-            // 绘制轨道和 Note
-            for (int i = 0; i < song.notes.Count; ++i) {
-                song.notes[i].Draw(cv, t, segments, resources, factor);
-            }
+            // 绘制背景图片先
+            Brush bg = song.bg.Clone();
+            bg.Opacity = 0.5;
+            cv.Image(0, 0, 640, 480, bg);
 
+            // 绘制轨道和 Note
             cv.Image(stageOffset, 0, 203, 480, (Brush)resources["img.stage"]);
             foreach (double x in segments) {
                 cv.Line(x, 0, x, 406);
+            }
+            for (int i = 0; i < song.notes.Count; ++i) {
+                song.notes[i].Draw(cv, t, segments, resources, factor);
             }
 
             // 绘制轨道光
