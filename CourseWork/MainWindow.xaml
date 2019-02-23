@@ -5,10 +5,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CourseWork"
         mc:Ignorable="d"
-        Title="MainWindow" Height="960" Width="1280" Closing="Window_Closing" ResizeMode="CanMinimize">
-    <Grid>
-        <Canvas x:Name="canvas" Loaded="Canvas_Loaded" Background="Transparent" Focusable="True">
+        Title="hso!mania" Height="960" Width="1280" Closing="Window_Closing" ResizeMode="CanMinimize">
+    <Grid Background="Black">
+        <Canvas x:Name="canvas" Loaded="Canvas_Loaded" Background="Black" Focusable="True">
         </Canvas>
-
     </Grid>
 </Window>

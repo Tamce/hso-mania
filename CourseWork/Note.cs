@@ -37,7 +37,7 @@ namespace CourseWork
         }
 
         // 执行判定，不判定因超时引起的 Miss 判定
-        public Status? Judge(decimal t, bool isReleasedEvent, ref int combo, ref int score, ref double percent, int noteCount) {
+        public Status? Judge(decimal t, bool isReleasedEvent, ref int combo, ref int score, ref decimal percent, int noteCount) {
             decimal dt = t - (isReleasedEvent ? endtime : time);
             Console.WriteLine("dt: {0}", dt);
             // 松手判定
@@ -61,25 +61,25 @@ namespace CourseWork
         }
 
         // 不进行 Miss 判定
-        private Status? JudgeInterval(ref Status s, ref int combo, decimal _dt, ref int score, ref double percent, int noteCount) {
+        private Status? JudgeInterval(ref Status s, ref int combo, decimal _dt, ref int score, ref decimal percent, int noteCount) {
             decimal dt = Math.Abs(_dt);
-            double pg = 100.0 / noteCount;
+            decimal pg = 100.0M / noteCount;
             int spg = 1000000 / noteCount;
             if (dt <= 20) {
                 s = Status.PGreat;
                 percent += pg;
-                score += spg;
+                score += (int)(spg * 1.1);
             } else if (dt <= 50) {
                 s = Status.Great;
-                percent += 0.97 * pg;
+                percent += 0.97M * pg;
                 score += spg;
             } else if (dt <= 100) {
                 s = Status.Good;
-                percent += 0.8 * pg;
+                percent += 0.8M * pg;
                 score += (int)(spg * 0.85);
             } else if (dt <= 200) {
                 s = Status.Bad;
-                percent += 0.7 * pg;
+                percent += 0.7M * pg;
                 score += (int)(spg * 0.7);
                 combo = -1;
             } else {

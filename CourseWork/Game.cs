@@ -28,7 +28,7 @@ namespace CourseWork
         // 分数
         int score = 0;
         // 百分比
-        double percent = 0;
+        decimal percent = 0;
         // Combo 数
         int combo = 0;
         // 按下的键，位或，从低位到高位分别是DFJK
@@ -82,6 +82,9 @@ namespace CourseWork
             foreach (string s in new string[] { "0", "50", "100", "200", "300", "300g"}) {
                 resources["img.hit-" + s] = Helper.loadImage("Skins/hit-" + s + ".png");
             }
+            foreach (string s in new string[] { "ss", "s", "a", "b", "c", "d" }) {
+                resources["img.rank-" + s] = Helper.loadImage("Skins/rank-" + s + ".png");
+            }
 
             ((Brush)resources["img.bg"]).Opacity = 0;
             ((Brush)resources["img.start"]).Opacity = 0;
@@ -115,6 +118,9 @@ namespace CourseWork
             //Console.WriteLine("Key Down: " + e.Key);
             switch (CurrentState) {
                 case State.Menu:
+                    if (e.Key == Key.Enter || e.Key == Key.Space) {
+                        ChangeState(State.Selecting);
+                    }
                     break;
                 case State.Selecting:
                     OnKeySelecting(e);
@@ -123,6 +129,9 @@ namespace CourseWork
                     OnKeyPlaying(e);
                     break;
                 case State.Result:
+                    if (e.Key == Key.Enter || e.Key == Key.Space) {
+                        ChangeState(State.Selecting);
+                    }
                     break;
             }
         }
@@ -238,7 +247,7 @@ namespace CourseWork
                 cv.Image(208, 100, 224, 160, song.bg);
                 // “选择歌曲”
                 cv.Rectangle(0, 0, 640, 50, 0, null, Helper.ColorBrush("#000", 0.4));
-                cv.Text(10, 12, 40, "选择歌曲");
+                cv.Text(20, 12, 40, "选择歌曲");
                 // 歌曲数量
                 cv.Text(640 - 80, 15, 30, string.Format("({0} / {1}) ", selectIndex + 1, songList.Count));
                 // 难度名显示
@@ -299,24 +308,108 @@ namespace CourseWork
             GameStart();
         }
 
-        public void OnDrawResult() {
-            cv.Clear();
-            Brush bg = song.bg;
-            Brush stage = ((Brush)resources["img.stage"]);
-            if (redraw) {
-                // 第一次绘制的时候先绘制 Playing 的淡出动画
-                cv.Image(0, 0, 640, 480, bg);
-                cv.Image(stageOffset, 0, 203, 480, stage);
-                stage.Opacity = 1;
-                if (stage.Opacity > 0) {
-                    stage.Opacity -= 0.05;
-                } else {
-                    // 直到淡出动画结束再淡入并停止绘制
-                    redraw = false;
-                    fade = true;
+        public void DrawSpriteNumber(int n, int nDigit, double x, double y, double size, double margin = 0) {
+            if (nDigit < 0) {
+                int temp = n;
+                nDigit = 0;
+                do {
+                    nDigit++;
+                    temp /= 10;
+                } while (temp != 0);
+            }
+            x = x + (nDigit - 1) * (size + margin);
+            for (int i = 0; i < nDigit; ++i) {
+                cv.Image(x - (margin + size) * i, y, size, size, (Brush)resources["img.score-" + n % 10]);
+                n /= 10;
+            }
+        }
 
-                    
+        public void OnDrawResult() {
+            Brush bg = song.bg;
+            bg.Opacity = 0.4;
+            Brush stage = ((Brush)resources["img.stage"]);
+            if (fade) {
+                if (cv.cv.Opacity > 0.1) {
+                    cv.Clear();
+                    cv.Image(0, 0, 640, 480, bg);
+                    cv.Image(stageOffset, 0, 203, 480, stage);
+                    cv.cv.Opacity -= 0.05;
+                    return;
                 }
+                fade = false;
+            }
+            if (!fade) {
+                if (cv.cv.Opacity < 1) {
+                    cv.cv.Opacity += 0.05;
+                }
+            }
+            
+            if (redraw) {
+                redraw = false;
+                bg = (Brush)resources["img.bg-black"];
+                cv.Clear();
+                cv.Image(0, 0, 640, 480, bg);
+                // 顶部遮罩
+                cv.Rectangle(0, 0, 640, 50, 0, null, Helper.ColorBrush("#000", 0.4));
+                cv.Text(20, 12, 40, "游玩结果");
+                // 歌曲名和难度名
+                // cv.Text(10, 80, 25, song.name);
+                // cv.Text(10, 100, 20, song.difficuties[difficultyIndex].Name.Substring(0, song.difficuties[difficultyIndex].Name.Length - 4), Helper.ColorBrush("#bbb"));
+
+                // 统计各类音符的数量并绘制
+                {
+                    int[] count = new int[] { 0, 0, 0, 0, 0, 0, 0 };
+                    foreach (Note n in song.notes) {
+                        count[(int)n.status]++;
+                        if (n.type == Note.Type.Hold) {
+                            count[(int)n.endStatus]++;
+                        }
+                    }
+
+                    int margin = 35;
+                    cv.Image(15, 185, 81, 27, (Brush)resources["img.hit-300g"]);
+                    cv.Image(15 + 200, 185, 81, 27, (Brush)resources["img.hit-300"]);
+                    cv.Image(15, 185 + margin + 30, 81, 27, (Brush)resources["img.hit-200"]);
+                    cv.Image(15 + 200, 185 + margin + 30, 81, 27, (Brush)resources["img.hit-50"]);
+                    cv.Image(15, 185 + 2*(margin + 30), 81, 27, (Brush)resources["img.hit-0"]);
+
+                    DrawSpriteNumber(count[(int)Note.Status.PGreat], -1, 105, 187, 25, 0);
+                    DrawSpriteNumber(count[(int)Note.Status.Great], -1, 305, 187, 25, 0);
+                    DrawSpriteNumber(count[(int)Note.Status.Good], -1, 105, 185+margin + 30 + 2, 25, 0);
+                    DrawSpriteNumber(count[(int)Note.Status.Bad], -1, 305, 185+margin + 30 + 2, 25, 0);
+                    DrawSpriteNumber(count[(int)Note.Status.Miss], -1, 105, 185+2*(margin + 30) + 2, 25, 0);
+                }
+
+                // TODO 响应按键高亮选择按钮
+                cv.Rectangle(370, 390, 120, 35, 3, Helper.ColorBrush("#aef"), Helper.ColorBrush("#000", 0.3));
+                cv.Text(370, 395, 35, "返回", null, 120);
+                cv.Rectangle(370 + 130, 390, 120, 35, 3, Helper.ColorBrush("#aef", 0.3), Helper.ColorBrush("#000", 0.3));
+                cv.Text(370 + 130, 395, 35, "重试", null, 120);
+
+                // 绘制 rank
+                {
+                    Brush ranking = null;
+                    if (percent >= 99) ranking = (Brush)resources["img.rank-ss"];
+                    else if (percent >= 97) ranking = (Brush)resources["img.rank-s"];
+                    else if (percent >= 90) ranking = (Brush)resources["img.rank-a"];
+                    else if (percent >= 80) ranking = (Brush)resources["img.rank-b"];
+                    else if (percent >= 60) ranking = (Brush)resources["img.rank-c"];
+                    else ranking = (Brush)resources["img.rank-d"];
+                    cv.Image(380, 130, 240, 200, ranking);
+                }
+
+                // 绘制分数和完成率
+                {
+                    // 分数
+                    DrawSpriteNumber(score, 7, 75, 100, 25, 5);
+                    // 整数部分
+                    DrawSpriteNumber((int)percent, 2, 100, 400, 30, 3);
+                    // 小数部分
+                    DrawSpriteNumber((int)((percent - (int)percent) * 100), 2, 100 + 2 * 33 + 10, 400, 30, 3);
+                    // 小数点和百分号
+                    cv.Text(100 + 2 * 30, 400+10, 30, "●", Helper.ColorBrush("#fff", 0.8));
+                    cv.Text(100 + 2 * 33 + 10 + 2 * 33 + 10, 400 - 10, 70, "%");
+                }                
             }
         }
 
@@ -371,7 +464,7 @@ namespace CourseWork
                     s /= 10;
                 }
                 // 小数部分
-                s = (int)(percent * 100 - (int)percent);
+                s = (int)((percent - (int)percent)*100);
                 for (int i = 0; i < 2; ++i) {
                     cv.Image(640 - 50 - 20 * i, 41, 20, 20, (Brush)resources["img.score-" + s % 10]);
                     s /= 10;
@@ -429,9 +522,10 @@ namespace CourseWork
             // 绘制判定 UI
             if (judgeUI != null) {
                 double xl = segments[1] - (segments[2] - segments[1]) / 2;
-                ((Brush)resources["img.hit-" + judgeUI]).Opacity = (double)judgeUITimeout / 10;
+                Brush b = ((Brush)resources["img.hit-" + judgeUI]).Clone();
+                b.Opacity = (double)judgeUITimeout / 10;
                 double scale = judgeUITimeout;
-                cv.Image(xl - scale, 300 - scale, (segments[4] + segments[3]) / 2 - xl + 2 * scale, 20 + 2*scale, (Brush)resources["img.hit-" + judgeUI]);
+                cv.Image(xl - scale, 300 - scale, (segments[4] + segments[3]) / 2 - xl + 2 * scale, 20 + 2*scale, b);
                 if (--judgeUITimeout < 5) {
                     ResetJudgeUI();
                 }
@@ -476,7 +570,7 @@ namespace CourseWork
                 Note note;
                 int dt = FindClosestFreeNote(song.notes, e.Key, t, false, out note);
                 if (note != null) {
-                    if (null != note.Judge(t, false, ref combo, ref score, ref percent, song.notes.Count)) {
+                    if (null != note.Judge(t, false, ref combo, ref score, ref percent, song.totalNoteCount)) {
                         // 按键判定有效，显示判定 UI
                         ShowJudgeUI(note.status);
                     }
@@ -495,7 +589,7 @@ namespace CourseWork
             Note note;
             int dt = FindClosestFreeNote(song.notes, e.Key, t, true, out note);
             if (note != null) {
-                if (null != note.Judge(t, true, ref combo, ref score, ref percent, song.notes.Count)) {
+                if (null != note.Judge(t, true, ref combo, ref score, ref percent, song.totalNoteCount)) {
                     // 按键判定有效，显示判定 UI
                     ShowJudgeUI(note.endStatus);
                 }
@@ -524,15 +618,6 @@ namespace CourseWork
                 case Note.Status.Miss:
                     judgeUI = "0";
                     break;
-            }
-        }
-
-        public void DrawScore(double x, double y, int size) {
-            int s = score;
-            // 一共七位数字
-            for (int i = 0; i < 7; ++i) {
-                cv.Image(x - size * i, y, size, size, (Brush)resources["img.score-" + s % 10]);
-                s /= 10;
             }
         }
 
