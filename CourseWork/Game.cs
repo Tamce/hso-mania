@@ -130,7 +130,13 @@ namespace CourseWork
                     break;
                 case State.Result:
                     if (e.Key == Key.Enter || e.Key == Key.Space) {
-                        ChangeState(State.Selecting);
+                        if (resultBtnIdx == 0)
+                            ChangeState(State.Selecting);
+                        else {
+                            Restart();
+                        }
+                    } else if (e.Key == Key.Right || e.Key == Key.Left || e.Key == Key.Tab) {
+                        resultBtnIdx = 1 - resultBtnIdx;
                     }
                     break;
             }
@@ -182,6 +188,9 @@ namespace CourseWork
             CurrentState = target;
             redraw = true;
             fade = true;
+            // 重置一些其他状态使用的变量
+            resultBtnIdx = 0;
+            judgeUITimeout = 0;
         }
 
         public void OnDrawMenu() {
@@ -324,6 +333,8 @@ namespace CourseWork
             }
         }
 
+
+        private int resultBtnIdx = 0;
         public void OnDrawResult() {
             Brush bg = song.bg;
             bg.Opacity = 0.4;
@@ -343,7 +354,7 @@ namespace CourseWork
                     cv.cv.Opacity += 0.05;
                 }
             }
-            
+            redraw = true;
             if (redraw) {
                 redraw = false;
                 bg = (Brush)resources["img.bg-black"];
@@ -353,8 +364,8 @@ namespace CourseWork
                 cv.Rectangle(0, 0, 640, 50, 0, null, Helper.ColorBrush("#000", 0.4));
                 cv.Text(20, 12, 40, "游玩结果");
                 // 歌曲名和难度名
-                // cv.Text(10, 80, 25, song.name);
-                // cv.Text(10, 100, 20, song.difficuties[difficultyIndex].Name.Substring(0, song.difficuties[difficultyIndex].Name.Length - 4), Helper.ColorBrush("#bbb"));
+                cv.Text(120, 10, 25, song.name);
+                cv.Text(120, 30, 20, song.difficuties[difficultyIndex].Name.Substring(0, song.difficuties[difficultyIndex].Name.Length - 4), Helper.ColorBrush("#bbb"));
 
                 // 统计各类音符的数量并绘制
                 {
@@ -381,9 +392,9 @@ namespace CourseWork
                 }
 
                 // TODO 响应按键高亮选择按钮
-                cv.Rectangle(370, 390, 120, 35, 3, Helper.ColorBrush("#aef"), Helper.ColorBrush("#000", 0.3));
+                cv.Rectangle(370, 390, 120, 35, 3, Helper.ColorBrush("#aef", resultBtnIdx == 0 ? 1 : 0.3), Helper.ColorBrush("#000", 0.3));
                 cv.Text(370, 395, 35, "返回", null, 120);
-                cv.Rectangle(370 + 130, 390, 120, 35, 3, Helper.ColorBrush("#aef", 0.3), Helper.ColorBrush("#000", 0.3));
+                cv.Rectangle(370 + 130, 390, 120, 35, 3, Helper.ColorBrush("#aef", resultBtnIdx == 1 ? 1 : 0.3), Helper.ColorBrush("#000", 0.3));
                 cv.Text(370 + 130, 395, 35, "重试", null, 120);
 
                 // 绘制 rank
@@ -624,16 +635,15 @@ namespace CourseWork
         // 先加载各种相关资源并设置变量，然后切换状态到 Playing
         public void GameStart() {
             song.LoadAll(difficultyIndex);
-            song.bgm.Position = TimeSpan.Zero;
             // 确保歌曲加载完毕
             while (!song.bgm.NaturalDuration.HasTimeSpan) System.Threading.Thread.Sleep(5);
+            ResetPlaying();
             ChangeState(State.Playing);
             previewing = song.bgm;
             previewing.Play();
         }
 
-        public void Restart() {
-            previewing.Stop();
+        public void ResetPlaying() {
             foreach (Note n in song.notes) {
                 n.status = Note.Status.Free;
                 n.endStatus = Note.Status.Free;
@@ -641,7 +651,15 @@ namespace CourseWork
             combo = 0;
             score = 0;
             percent = 0;
-            song.bgm.Play();
+            song.bgm.Position = TimeSpan.Zero;
+        }
+
+        // 停止当前正在播放的，重置游玩状态并且自动切换到 Playing 并开始播放
+        public void Restart() {
+            ResetPlaying();
+            ChangeState(State.Playing);
+            previewing = song.bgm;
+            previewing.Play();
         }
     }
 }
