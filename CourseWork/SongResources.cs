@@ -40,6 +40,7 @@ namespace CourseWork
         public List<Note> notes;
         public int totalNoteCount;
         public MediaPlayer bgm;
+        public int loadedDifficultyIndex;
 
         public void FilterValidMania4K() {
             difficuties.RemoveAll((FileInfo f) => {
@@ -95,6 +96,7 @@ namespace CourseWork
                     if (n.type == Note.Type.Hold) totalNoteCount++;
                 }
             }
+            loadedDifficultyIndex = difficultyIndex;
             return this;
         }
     }
