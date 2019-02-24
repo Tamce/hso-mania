@@ -28,10 +28,6 @@ namespace CourseWork.States
             fadeout = true;
 
             playing.player = (MediaPlayer)resources["wav.result"];
-            playing.player.MediaEnded += (s, e) => {
-                playing.player.Stop();
-                playing.player.Play();
-            };
             playing.player.Play();
         }
         public override void OnKeyDown(object sender, KeyEventArgs e) {

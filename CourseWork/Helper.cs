@@ -8,16 +8,18 @@ using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using System.Windows;
 using System.Threading;
+using System.IO;
 
 namespace CourseWork
 {
     static class Helper
     {
+        static public event ErrorEventHandler errorHandler;
         static public MediaPlayer loadSound(string wav) {
             MediaPlayer sound = new MediaPlayer();
             sound.Open(new Uri(wav, UriKind.RelativeOrAbsolute));
             sound.MediaFailed += (sender, e) => {
-                throw new Exception("加载歌曲文件失败！ file: " + wav, e.ErrorException);
+                errorHandler(sender, new ErrorEventArgs(new Exception("加载歌曲文件失败！ 相关文件: \n" + wav, e.ErrorException)));
             };
             // 之前因为没监听 MediaFailed 然后在这里等加载死循环(x
             // while (!sound.NaturalDuration.HasTimeSpan) Thread.Sleep(5);
@@ -25,8 +27,11 @@ namespace CourseWork
         }
 
         static public ImageBrush loadImage(string path) {
-            BitmapImage bm = new BitmapImage(new Uri(path, UriKind.RelativeOrAbsolute));
-            return new ImageBrush(bm);
+            if (!File.Exists(path)) {
+                throw new Exception("加载图片资源时失败！ \n缺少必要的图片资源文件: \n" + path);
+            }
+            // 为什么下面这个地方 catch 不到抛出的 Exception 的???? 用 BeginInit 也没用
+            return new ImageBrush(new BitmapImage(new Uri(path, UriKind.RelativeOrAbsolute)));
         }
 
         static public Brush ColorBrush(string rgb, double opacity = 1) {

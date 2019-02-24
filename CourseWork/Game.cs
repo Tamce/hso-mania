@@ -61,6 +61,7 @@ namespace CourseWork
 
             // 初始化加载各种资源
             cv.Text(320 - 80, 240 - 40, 80, "Loading...", Helper.ColorBrush("#fff"));
+
             resources["img.bg"] = Helper.loadImage("Skins/bg.jpg");
             resources["img.start"] = Helper.loadImage("Skins/start_btn.png");
             resources["wav.startup"] = Helper.loadSound("Skins/startup.mp3");
@@ -79,7 +80,11 @@ namespace CourseWork
             resources["img.key2D"] = Helper.loadImage("Skins/key2D.png");
             resources["wav.se"] = Helper.loadSound("Skins/se.wav");
             resources["wav.result"] = Helper.loadSound("Skins/result.mp3");
-            foreach (string s in new string[] { "0", "50", "100", "200", "300", "300g"}) {
+            ((MediaPlayer)resources["wav.result"]).MediaEnded += (s, e) => {
+                ((MediaPlayer)s).Stop();
+                ((MediaPlayer)s).Play();
+            };
+            foreach (string s in new string[] { "0", "50", "200", "300", "300g" }) {
                 resources["img.hit-" + s] = Helper.loadImage("Skins/hit-" + s + ".png");
             }
             foreach (string s in new string[] { "ss", "s", "a", "b", "c", "d" }) {
@@ -97,8 +102,12 @@ namespace CourseWork
 
         private void LoadSongList() {
             DirectoryInfo songDir = new DirectoryInfo("Songs");
-            foreach (DirectoryInfo dir in songDir.GetDirectories()) {
-                songList.Add(new SongResources(dir));
+            try {
+                foreach (DirectoryInfo dir in songDir.GetDirectories()) {
+                    songList.Add(new SongResources(dir));
+                }
+            } catch (Exception e) {
+                MessageBox.Show("在加载谱面数据时出错，请移除错误的文件并重新启动！\n\n详细信息: \n" + e.Message);
             }
             for (int i = songList.Count - 1; i >= 0; --i) {
                 if (songList[i].difficuties.Count == 0) {
