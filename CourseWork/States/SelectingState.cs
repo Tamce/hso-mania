@@ -30,33 +30,40 @@ namespace CourseWork.States
             fadeout = true;
         }
 
+
+        void ChangeSong(int dIndex = 0, int dDiff = 0) {
+            if (dIndex != 0) {
+                selectIndex = (selectIndex + dIndex + songList.Count) % songList.Count;
+                difficultyIndex = 0;
+                fade = true;
+            } else {
+                difficultyIndex = (difficultyIndex + song.difficuties.Count + dDiff) % song.difficuties.Count;
+            }
+            redraw = true;
+        }
         public override void OnKeyDown(object sender, KeyEventArgs e) {
             if (e.Key == Key.Right) {
-                selectIndex = (selectIndex + 1) % songList.Count;
-                difficultyIndex = 0;
-                redraw = true;
-                fade = true;
+                ChangeSong(1);
             } else if (e.Key == Key.Left) {
-                selectIndex = (selectIndex - 1 + songList.Count) % songList.Count;
-                difficultyIndex = 0;
-                redraw = true;
-                fade = true;
+                ChangeSong(-1);
             } else if (e.Key == Key.Space || e.Key == Key.Enter) {
                 Start();
             } else if (e.Key == Key.Escape) {
                 PushState(State.Menu);
             } else if (e.Key == Key.Up) {
-                difficultyIndex = (difficultyIndex + song.difficuties.Count - 1) % song.difficuties.Count;
-                redraw = true;
+                ChangeSong(0, -1);
             } else if (e.Key == Key.Down) {
-                difficultyIndex = (difficultyIndex + 1) % song.difficuties.Count;
-                redraw = true;
+                ChangeSong(0, 1);
             }
         }
 
         public override void OnMouseLeftButtonDown(object sender, CanvasHelper.PointEventArg e) {
             base.OnMouseLeftButtonDown(sender, e);
-            if (Helper.PointIn(e.point, 260, 380, 260 + 120, 380 + 40)) {
+            if (Helper.PointIn(e.point, 208 - 50, 100 + 80 - 20, 208 - 50 + 60, 100 + 80 - 20 + 60)) {
+                ChangeSong(-1);
+            } else if (Helper.PointIn(e.point, 208 + 224 - 10, 100 + 80 - 20, 208 + 224 - 10 + 60, 100 + 80 - 20 + 60)) {
+                ChangeSong(1);
+            } else if (Helper.PointIn(e.point, 260, 380, 260 + 120, 380 + 40)) {
                 Start();
             }
         }
@@ -65,13 +72,13 @@ namespace CourseWork.States
         public override void OnDraw() {
             if (fadeout) {
                 if (cv.cv.Opacity > 0.1) {
-                    cv.cv.Opacity -= 0.1;
+                    cv.cv.Opacity -= 0.2;
                     return;
                 }
                 fadeout = false;
             }
             if (!fadeout && cv.cv.Opacity < 1) {
-                cv.cv.Opacity += 0.1;
+                cv.cv.Opacity += 0.2;
             }
 
             if (redraw) {

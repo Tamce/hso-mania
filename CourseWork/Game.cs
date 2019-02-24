@@ -30,7 +30,7 @@ namespace CourseWork
         private State CurrentState;
         public Game(CanvasHelper _cv) {
             cv = _cv;
-            cv.MouseLeftButtonUp += Canvas_MouseLeftButtonUp;
+            cv.MouseButtonEvent += Canvas_MouseLeftButtonUp;
             cv.KeyDown += CanvasKeyDown;
             cv.KeyUp += CanvasKeyUp;
 
@@ -42,7 +42,6 @@ namespace CourseWork
             foreach (var s in GameStates) {
                 s.Value.OnPushState += OnPushState;
             }
-            OnPushState(State.Menu);
         }
 
         void OnPushState(State target, object args = null, bool stopMusic = true) {
@@ -63,6 +62,7 @@ namespace CourseWork
             cv.Text(320 - 80, 240 - 40, 80, "Loading...", Helper.ColorBrush("#fff"));
 
             resources["img.bg"] = Helper.loadImage("Skins/bg.jpg");
+            resources["img.instruction"] = Helper.loadImage("Skins/instruction.jpg");
             resources["img.start"] = Helper.loadImage("Skins/start_btn.png");
             resources["wav.startup"] = Helper.loadSound("Skins/startup.mp3");
             resources["img.bg-black"] = Helper.loadImage("Skins/bg-black.png");
@@ -72,6 +72,7 @@ namespace CourseWork
             resources["img.note2"] = Helper.loadImage("Skins/mania-note2.png");
             resources["img.note2L"] = Helper.loadImage("Skins/mania-note2L.png");
             resources["img.light"] = Helper.loadImage("Skins/mania-stage-light.png");
+            ((Brush)resources["img.light"]).Opacity = 0.7;
             for (int i = 0; i <= 9; ++i)
                 resources["img.score-" + i] = Helper.loadImage("Skins/score-" + i + ".png");
             resources["img.key1"] = Helper.loadImage("Skins/key1.png");
@@ -89,15 +90,13 @@ namespace CourseWork
             }
             foreach (string s in new string[] { "ss", "s", "a", "b", "c", "d" }) {
                 resources["img.rank-" + s] = Helper.loadImage("Skins/rank-" + s + ".png");
-            }
-
-            ((Brush)resources["img.bg"]).Opacity = 0;
-            ((Brush)resources["img.start"]).Opacity = 0;
-            ((Brush)resources["img.light"]).Opacity = 0.7;
+            }            
             LoadSongList();
 
             // 设置 resource 引用
             resources["res.songlist"] = songList;
+
+            OnPushState(State.Menu);
         }
 
         private void LoadSongList() {

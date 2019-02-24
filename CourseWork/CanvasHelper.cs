@@ -17,7 +17,7 @@ namespace CourseWork
         public class PointEventArg : EventArgs {
             public Point point;
         }
-        public event EventHandler<PointEventArg> MouseLeftButtonUp;
+        public event EventHandler<PointEventArg> MouseButtonEvent;
         public event KeyEventHandler KeyDown;
         public event KeyEventHandler KeyUp;
         public CanvasHelper(Canvas _cv) {
@@ -27,7 +27,7 @@ namespace CourseWork
             }
             Height = cv.ActualHeight;
             Width = cv.ActualWidth;
-            cv.PreviewMouseLeftButtonUp += Canvas_MouseLeftButtonUp;
+            cv.PreviewMouseLeftButtonDown += Canvas_MouseLeftButtonUp;
             cv.PreviewKeyDown += Canvas_KeyDown;
             cv.PreviewKeyUp += Canvas_KeyUp; ;
         }
@@ -42,7 +42,7 @@ namespace CourseWork
 
         private void Canvas_MouseLeftButtonUp(object sender, MouseButtonEventArgs e) {
             Point p = e.GetPosition(cv);
-            MouseLeftButtonUp(sender, new PointEventArg() {
+            MouseButtonEvent(sender, new PointEventArg() {
                 point = new Point(w(p.X, true), h(p.Y, true))
             });
         }

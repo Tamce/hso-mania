@@ -19,7 +19,7 @@ namespace CourseWork
             MediaPlayer sound = new MediaPlayer();
             sound.Open(new Uri(wav, UriKind.RelativeOrAbsolute));
             sound.MediaFailed += (sender, e) => {
-                errorHandler(sender, new ErrorEventArgs(new Exception("加载歌曲文件失败！ 相关文件: \n" + wav, e.ErrorException)));
+                errorHandler(sender, new ErrorEventArgs(new Exception("在加载歌曲资源时失败！请确保媒体文件存在并有效！ 相关文件: \n" + wav, e.ErrorException)));
             };
             // 之前因为没监听 MediaFailed 然后在这里等加载死循环(x
             // while (!sound.NaturalDuration.HasTimeSpan) Thread.Sleep(5);
