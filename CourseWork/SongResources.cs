@@ -48,7 +48,7 @@ namespace CourseWork
                     using (StreamReader sr = f.OpenText()) {
                         metadata = sr.ReadToEnd();
                     }
-                } catch (Exception e) {
+                } catch (Exception) {
                     Console.WriteLine("无法读取谱面文件，忽略之，相关谱面文件: \n{0}", f.Name);
                     return true;
                 }

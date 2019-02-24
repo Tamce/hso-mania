@@ -10,7 +10,6 @@ namespace CourseWork.States
 {
     class ResultState : StateBase
     {
-        bool fade = true;
         SongResources song;
         int combo, score;
         decimal percent;
@@ -21,12 +20,19 @@ namespace CourseWork.States
 
         public override void OnStateEnter(object args) {
             base.OnStateEnter(args);
-            fade = true;
             resultBtnIdx = 0;
             song = (SongResources)((object[])args)[0];
             combo = (int)((object[])args)[1];
             score = (int)((object[])args)[2];
             percent = (decimal)((object[])args)[3];
+            fadeout = true;
+
+            playing.player = (MediaPlayer)resources["wav.result"];
+            playing.player.MediaEnded += (s, e) => {
+                playing.player.Stop();
+                playing.player.Play();
+            };
+            playing.player.Play();
         }
         public override void OnKeyDown(object sender, KeyEventArgs e) {
             if (e.Key == Key.Enter || e.Key == Key.Space) {
@@ -40,28 +46,23 @@ namespace CourseWork.States
                 redraw = true;
             }
         }
+
+        bool fadeout = true;
         public override void OnDraw() {
-            Brush bg = song.bg;
-            bg.Opacity = 0.4;
-            Brush stage = ((Brush)resources["img.stage"]);
-            if (fade) {
+            if (fadeout) {
                 if (cv.cv.Opacity > 0.1) {
-                    cv.Clear();
-                    cv.Image(0, 0, 640, 480, bg);
-                    cv.Image(stageOffset, 0, 203, 480, stage);
-                    cv.cv.Opacity -= 0.05;
+                    cv.cv.Opacity -= 0.1;
                     return;
                 }
-                fade = false;
+                fadeout = false;
             }
-            if (!fade) {
-                if (cv.cv.Opacity < 1) {
-                    cv.cv.Opacity += 0.05;
-                }
+            if (!fadeout && cv.cv.Opacity < 1) {
+                cv.cv.Opacity += 0.1;
             }
+
             if (redraw) {
                 redraw = false;
-                bg = (Brush)resources["img.bg-black"];
+                Brush bg = (Brush)resources["img.bg-black"];
                 cv.Clear();
                 cv.Image(0, 0, 640, 480, bg);
                 // 顶部遮罩
@@ -95,7 +96,7 @@ namespace CourseWork.States
                     DrawSpriteNumber(count[(int)Note.Status.Miss], -1, 105, 185 + 2 * (margin + 30) + 2, 25, 0);
                 }
 
-                // TODO 响应按键高亮选择按钮
+                // 绘制按钮
                 cv.Rectangle(370, 390, 120, 35, 3, Helper.ColorBrush("#aef", resultBtnIdx == 0 ? 1 : 0.3), Helper.ColorBrush("#000", 0.3));
                 cv.Text(370, 395, 35, "返回", null, 120);
                 cv.Rectangle(370 + 130, 390, 120, 35, 3, Helper.ColorBrush("#aef", resultBtnIdx == 1 ? 1 : 0.3), Helper.ColorBrush("#000", 0.3));
@@ -125,6 +126,16 @@ namespace CourseWork.States
                     cv.Text(100 + 2 * 30, 400 + 10, 30, "●", Helper.ColorBrush("#fff", 0.8));
                     cv.Text(100 + 2 * 33 + 10 + 2 * 33 + 10, 400 - 10, 70, "%");
                 }
+            }
+        }
+        public override void OnMouseLeftButtonDown(object sender, CanvasHelper.PointEventArg e) {
+            base.OnMouseLeftButtonDown(sender, e);
+            if (Helper.PointIn(e.point, 370, 390, 370 + 120, 390 + 35)) {
+                resultBtnIdx = 0;
+                PushState(State.Selecting);
+            } else if (Helper.PointIn(e.point, 370 + 130, 390, 370 + 130 + 120, 390 + 35)) {
+                resultBtnIdx = 1;
+                PushState(State.Playing, song);
             }
         }
         void DrawSpriteNumber(int n, int nDigit, double x, double y, double size, double margin = 0) {

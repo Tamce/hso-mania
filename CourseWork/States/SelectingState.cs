@@ -21,8 +21,13 @@ namespace CourseWork.States
         public override void OnStateEnter(object args) {
             base.OnStateEnter(args);
             songList = (List<SongResources>)resources["res.songlist"];
-            selectIndex = 0;
-            difficultyIndex = 0;
+            // 在不传参过来的时候才重置选择的歌曲
+            if (null == args) {
+                selectIndex = 0;
+                difficultyIndex = 0;
+                song = songList[selectIndex];
+            }
+            fadeout = true;
         }
 
         public override void OnKeyDown(object sender, KeyEventArgs e) {
@@ -37,11 +42,7 @@ namespace CourseWork.States
                 redraw = true;
                 fade = true;
             } else if (e.Key == Key.Space || e.Key == Key.Enter) {
-                song.LoadAll(difficultyIndex);
-                // 确保歌曲加载完毕
-                while (!song.bgm.NaturalDuration.HasTimeSpan) System.Threading.Thread.Sleep(5);
-                playing.player = song.bgm;
-                PushState(State.Playing, song);
+                Start();
             } else if (e.Key == Key.Escape) {
                 PushState(State.Menu);
             } else if (e.Key == Key.Up) {
@@ -55,8 +56,24 @@ namespace CourseWork.States
 
         public override void OnMouseLeftButtonDown(object sender, CanvasHelper.PointEventArg e) {
             base.OnMouseLeftButtonDown(sender, e);
+            if (Helper.PointIn(e.point, 260, 380, 260 + 120, 380 + 40)) {
+                Start();
+            }
         }
+
+        bool fadeout = true;
         public override void OnDraw() {
+            if (fadeout) {
+                if (cv.cv.Opacity > 0.1) {
+                    cv.cv.Opacity -= 0.1;
+                    return;
+                }
+                fadeout = false;
+            }
+            if (!fadeout && cv.cv.Opacity < 1) {
+                cv.cv.Opacity += 0.1;
+            }
+
             if (redraw) {
                 redraw = false;
                 cv.Clear();
@@ -115,6 +132,15 @@ namespace CourseWork.States
             if (song.bg.Opacity < 0.8) {
                 song.bg.Opacity += 0.05;
             }
+        }
+
+        void Start() {
+            if (null != playing.player) playing.player.Stop();
+            song.LoadAll(difficultyIndex);
+            // 确保歌曲加载完毕
+            while (!song.bgm.NaturalDuration.HasTimeSpan) System.Threading.Thread.Sleep(5);
+            playing.player = song.bgm;
+            PushState(State.Playing, song);
         }
     }
 }

@@ -35,7 +35,10 @@ namespace CourseWork
             canvas.Focus();
             cv = new CanvasHelper(canvas);
             game = new Game(cv);
-            game.Initialize();
+            // 异步加载各种文件
+            Dispatcher.Invoke(() => {
+                game.Initialize();
+            });
             loop = new Thread(new ThreadStart(Loop));
             loop.Start();
         }

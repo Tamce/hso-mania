@@ -15,7 +15,7 @@ namespace CourseWork.States
         protected Dictionary<string, object> resources;
         protected Dictionary<string, object> env;
         protected Game.PlayerWraper playing;
-        public delegate void StateChangeDelegate(State target, object args);
+        public delegate void StateChangeDelegate(State target, object args, bool stopMusic);
         public event StateChangeDelegate OnPushState;
         public bool redraw = true;
         public StateBase(CanvasHelper _cv, Dictionary<string, object> res, Game.PlayerWraper playing) {
@@ -23,8 +23,8 @@ namespace CourseWork.States
             resources = res;
             this.playing = playing;
         }
-        public void PushState(State target, object args = null) {
-            OnPushState(target, args);
+        public void PushState(State target, object args = null, bool stopMusic = true) {
+            OnPushState(target, args, stopMusic);
         }
         public virtual void OnStateEnter(object args) { redraw = true; }
         public virtual void OnKeyDown(object sender, KeyEventArgs e) { }

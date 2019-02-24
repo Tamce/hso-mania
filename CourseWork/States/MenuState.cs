@@ -12,8 +12,9 @@ namespace CourseWork.States
     {
         public MenuState(CanvasHelper _cv, Dictionary<string, object> res, Game.PlayerWraper playing) : base(_cv, res, playing) {
         }
-
+        
         public override void OnDraw() {
+
             // 绘制菜单，只用绘制一次
             if (redraw) {
                 cv.Clear();
@@ -31,6 +32,11 @@ namespace CourseWork.States
             }
             if (((Brush)resources["img.start"]).Opacity < 1) {
                 ((Brush)resources["img.start"]).Opacity += 0.04;
+            }
+
+            // 循环播放
+            if (playing.player != null && playing.player.NaturalDuration.HasTimeSpan && playing.player.Position.TotalSeconds >= playing.player.NaturalDuration.TimeSpan.TotalSeconds - 5) {
+                playing.player.Position = TimeSpan.Zero;
             }
         }
 

@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Threading;
 
 namespace CourseWork.States
 {
@@ -33,6 +34,7 @@ namespace CourseWork.States
             song = (SongResources)args;
             playing.player = song.bgm;
             Restart();
+            cv.cv.Opacity = 0.3;
         }
         public override void OnMouseLeftButtonDown(object sender, CanvasHelper.PointEventArg e) {
             PushState(State.Result, new object[] { song, combo, score, percent });
@@ -40,8 +42,7 @@ namespace CourseWork.States
         public override void OnKeyDown(object sender, KeyEventArgs e) {
             // TODO 重新整理这些按键的逻辑
             if (e.Key == Key.Escape) {
-                song.bgm.Pause();
-                //ChangeState(State.Selecting);
+                PushState(State.Selecting, true, false);
             } else if (e.Key == Key.Oem3) {
                 Restart();
             } else if (e.Key == Key.F3) {
@@ -89,8 +90,12 @@ namespace CourseWork.States
 
         public override void OnDraw() {
             cv.Clear();
+            if (cv.cv.Opacity < 1) {
+                cv.cv.Opacity += 0.1;
+            }
 
             decimal t = Convert.ToDecimal(song.bgm.Position.TotalMilliseconds);
+
 
             // 歌曲结束判定
             if (song.bgm.Position.TotalMilliseconds > song.bgm.NaturalDuration.TimeSpan.TotalMilliseconds - 100) {
@@ -203,6 +208,11 @@ namespace CourseWork.States
                     ResetJudgeUI();
                 }
             }
+
+            // 绘制进度条
+            double progress = (double)t / song.bgm.NaturalDuration.TimeSpan.TotalMilliseconds;
+            cv.Rectangle(0, 0, progress * 640, 4, 2, Helper.ColorBrush("#fff"), Helper.ColorBrush("#fff"));
+            cv.Rectangle(progress * 640, 0, 4, 4, 2, Helper.ColorBrush("#faa"), Helper.ColorBrush("#faa"));
         }
 
         // 停止播放并重置所有变量

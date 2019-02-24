@@ -24,12 +24,7 @@ namespace CourseWork
             public MediaPlayer player;
         }
         private CanvasHelper cv;
-        bool redraw = true;
         PlayerWraper player = new PlayerWraper();
-        
-        // 当前选中的歌曲
-        SongResources song = null;
-
         // 重构状态机
         Dictionary<State, States.StateBase> GameStates;
         private State CurrentState;
@@ -39,19 +34,22 @@ namespace CourseWork
             cv.KeyDown += CanvasKeyDown;
             cv.KeyUp += CanvasKeyUp;
 
-            GameStates = new Dictionary<States.StateBase.State, States.StateBase>(4);
+            GameStates = new Dictionary<State, States.StateBase>(4);
             GameStates[State.Menu] = new States.MenuState(cv, resources, player);
             GameStates[State.Selecting] = new States.SelectingState(cv, resources, player);
             GameStates[State.Playing] = new States.PlayingState(cv, resources, player);
             GameStates[State.Result] = new States.ResultState(cv, resources, player);
             foreach (var s in GameStates) {
-                s.Value.OnPushState += OnPushState; ;
+                s.Value.OnPushState += OnPushState;
             }
-            OnPushState(State.Menu, null);
+            OnPushState(State.Menu);
         }
 
-        void OnPushState(State target, object args) {
-            if (player.player != null) player.player.Stop();
+        void OnPushState(State target, object args = null, bool stopMusic = true) {
+            if (stopMusic && player.player != null) {
+                player.player.Stop();
+                player.player = null;
+            }
             CurrentState = target;
             GameStates[CurrentState].OnStateEnter(args);
         }
@@ -80,6 +78,7 @@ namespace CourseWork
             resources["img.key1D"] = Helper.loadImage("Skins/key1D.png");
             resources["img.key2D"] = Helper.loadImage("Skins/key2D.png");
             resources["wav.se"] = Helper.loadSound("Skins/se.wav");
+            resources["wav.result"] = Helper.loadSound("Skins/result.mp3");
             foreach (string s in new string[] { "0", "50", "100", "200", "300", "300g"}) {
                 resources["img.hit-" + s] = Helper.loadImage("Skins/hit-" + s + ".png");
             }
@@ -100,6 +99,11 @@ namespace CourseWork
             DirectoryInfo songDir = new DirectoryInfo("Songs");
             foreach (DirectoryInfo dir in songDir.GetDirectories()) {
                 songList.Add(new SongResources(dir));
+            }
+            for (int i = songList.Count - 1; i >= 0; --i) {
+                if (songList[i].difficuties.Count == 0) {
+                    songList.RemoveAt(i);
+                }
             }
         }
 
