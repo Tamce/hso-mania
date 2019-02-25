@@ -13,7 +13,6 @@ using System.IO;
 using System.Windows.Shapes;
 using State = CourseWork.States.StateBase.State;
 
-// TODO 成绩结算页面，暂定和返回逻辑
 namespace CourseWork
 {
     class Game

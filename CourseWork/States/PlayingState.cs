@@ -40,7 +40,6 @@ namespace CourseWork.States
             PushState(State.Result, new object[] { song, combo, score, percent });
         }
         public override void OnKeyDown(object sender, KeyEventArgs e) {
-            // TODO 重新整理这些按键的逻辑
             if (e.Key == Key.Escape) {
                 PushState(State.Selecting, true, false);
             } else if (e.Key == Key.Oem3) {
