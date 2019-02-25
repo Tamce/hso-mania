@@ -16,6 +16,7 @@ namespace CourseWork.States
         bool fade = true;
         int selectIndex = 0;
         int difficultyIndex = 0;
+        bool noSong = false;
         public SelectingState(CanvasHelper _cv, Dictionary<string, object> res, Game.PlayerWraper playing) : base(_cv, res, playing) {
         }
         public override void OnStateEnter(object args) {
@@ -25,7 +26,11 @@ namespace CourseWork.States
             if (null == args) {
                 selectIndex = 0;
                 difficultyIndex = 0;
-                song = songList[selectIndex];
+                if (songList.Count == 0) {
+                    noSong = true;
+                } else {
+                    song = songList[selectIndex];
+                }
             }
             fadeout = true;
         }
@@ -42,6 +47,7 @@ namespace CourseWork.States
             redraw = true;
         }
         public override void OnKeyDown(object sender, KeyEventArgs e) {
+            if (noSong && e.Key != Key.Escape) return;
             if (e.Key == Key.Right) {
                 ChangeSong(1);
             } else if (e.Key == Key.Left) {
@@ -59,6 +65,7 @@ namespace CourseWork.States
 
         public override void OnMouseDown(object sender, CanvasHelper.PointEventArg e) {
             base.OnMouseDown(sender, e);
+            if (noSong) return;
             if (Helper.PointIn(e.point, 208 - 50, 100 + 80 - 20, 208 - 50 + 60, 100 + 80 - 20 + 60)) {
                 ChangeSong(-1);
             } else if (Helper.PointIn(e.point, 208 + 224 - 10, 100 + 80 - 20, 208 + 224 - 10 + 60, 100 + 80 - 20 + 60)) {
@@ -81,13 +88,14 @@ namespace CourseWork.States
                 cv.cv.Opacity += 0.2;
             }
 
+            if (noSong) {
+                cv.Clear();
+                cv.Text(0, 240 - 25, 50, "没有发现任何歌曲... 按下 [ESC] 返回", null, 640);
+                return;
+            }
             if (redraw) {
                 redraw = false;
                 cv.Clear();
-                if (songList.Count == 0) {
-                    cv.Text(320 - 80, 240 - 40, 80, "没有发现任何歌曲...");
-                    return;
-                }
                 cv.Image(0, 0, 640, 480, (Brush)resources["img.bg-black"]);
                 // 这里 fade 了表示切歌了，重新载入 song 和 bgm 并且开始从中间位置播放
                 if (fade) {

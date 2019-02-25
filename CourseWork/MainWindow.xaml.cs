@@ -12,6 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.IO;
 
 namespace CourseWork
 {
@@ -29,6 +30,9 @@ namespace CourseWork
         public MainWindow() {
             InitializeComponent();
             Helper.errorHandler += Helper_errorHandler;
+            if (!Directory.Exists("Songs") || !Directory.Exists("Skins")) {
+                MessageBox.Show("游戏需要 Skins 文件夹和 Songs 文件夹才能执行！ 正在退出...", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void Helper_errorHandler(object sender, System.IO.ErrorEventArgs e) {
