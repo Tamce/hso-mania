@@ -31,7 +31,7 @@ namespace CourseWork.States
 
         public virtual void OnKeyUp(object sender, KeyEventArgs e) { }
 
-        public virtual void OnMouseLeftButtonDown(object sender, CanvasHelper.PointEventArg e) {
+        public virtual void OnMouseDown(object sender, CanvasHelper.PointEventArg e) {
             return;
         }
 

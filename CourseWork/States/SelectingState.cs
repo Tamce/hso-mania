@@ -57,8 +57,8 @@ namespace CourseWork.States
             }
         }
 
-        public override void OnMouseLeftButtonDown(object sender, CanvasHelper.PointEventArg e) {
-            base.OnMouseLeftButtonDown(sender, e);
+        public override void OnMouseDown(object sender, CanvasHelper.PointEventArg e) {
+            base.OnMouseDown(sender, e);
             if (Helper.PointIn(e.point, 208 - 50, 100 + 80 - 20, 208 - 50 + 60, 100 + 80 - 20 + 60)) {
                 ChangeSong(-1);
             } else if (Helper.PointIn(e.point, 208 + 224 - 10, 100 + 80 - 20, 208 + 224 - 10 + 60, 100 + 80 - 20 + 60)) {

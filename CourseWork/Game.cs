@@ -131,7 +131,7 @@ namespace CourseWork
         // 处理鼠标事件
         private void Canvas_MouseLeftButtonUp(object sender, CanvasHelper.PointEventArg e) {
             Console.WriteLine("Mouse Click: ({0}, {1})", e.point.X, e.point.Y);
-            GameStates[CurrentState].OnMouseLeftButtonDown(sender, e);
+            GameStates[CurrentState].OnMouseDown(sender, e);
         }
  
         public void OnUpdate() {

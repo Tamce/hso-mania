@@ -33,7 +33,7 @@ namespace CourseWork.States
         public override void OnKeyDown(object sender, KeyEventArgs e) {
             if (e.Key == Key.Enter || e.Key == Key.Space) {
                 if (resultBtnIdx == 0)
-                    PushState(State.Selecting);
+                    PushState(State.Selecting, true);
                 else {
                     PushState(State.Playing, song);
                 }
@@ -124,11 +124,11 @@ namespace CourseWork.States
                 }
             }
         }
-        public override void OnMouseLeftButtonDown(object sender, CanvasHelper.PointEventArg e) {
-            base.OnMouseLeftButtonDown(sender, e);
+        public override void OnMouseDown(object sender, CanvasHelper.PointEventArg e) {
+            base.OnMouseDown(sender, e);
             if (Helper.PointIn(e.point, 370, 390, 370 + 120, 390 + 35)) {
                 resultBtnIdx = 0;
-                PushState(State.Selecting);
+                PushState(State.Selecting, true);
             } else if (Helper.PointIn(e.point, 370 + 130, 390, 370 + 130 + 120, 390 + 35)) {
                 resultBtnIdx = 1;
                 PushState(State.Playing, song);

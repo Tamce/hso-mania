@@ -61,7 +61,12 @@ namespace CourseWork.States
             }
         }
 
-        public override void OnMouseLeftButtonDown(object sender, CanvasHelper.PointEventArg e) {
+        public override void OnMouseDown(object sender, CanvasHelper.PointEventArg e) {
+            if (showInstruction) {
+                showInstruction = false;
+                cv.cv.Opacity = 0.3;
+                return;
+            }
             PushState(State.Selecting);
         }
 

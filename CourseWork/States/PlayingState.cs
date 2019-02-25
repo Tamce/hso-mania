@@ -36,7 +36,7 @@ namespace CourseWork.States
             Restart();
             cv.cv.Opacity = 0.3;
         }
-        public override void OnMouseLeftButtonDown(object sender, CanvasHelper.PointEventArg e) {
+        public override void OnMouseDown(object sender, CanvasHelper.PointEventArg e) {
             PushState(State.Result, new object[] { song, combo, score, percent });
         }
         public override void OnKeyDown(object sender, KeyEventArgs e) {
