@@ -27,7 +27,7 @@ namespace CourseWork
             }
             Height = cv.ActualHeight;
             Width = cv.ActualWidth;
-            cv.PreviewMouseLeftButtonDown += Canvas_MouseLeftButtonUp;
+            cv.PreviewMouseLeftButtonDown += MouseEvent;
             cv.PreviewKeyDown += Canvas_KeyDown;
             cv.PreviewKeyUp += Canvas_KeyUp; ;
         }
@@ -40,7 +40,7 @@ namespace CourseWork
             KeyDown(sender, e);
         }
 
-        private void Canvas_MouseLeftButtonUp(object sender, MouseButtonEventArgs e) {
+        private void MouseEvent(object sender, MouseButtonEventArgs e) {
             Point p = e.GetPosition(cv);
             MouseButtonEvent(sender, new PointEventArg() {
                 point = new Point(w(p.X, true), h(p.Y, true))
