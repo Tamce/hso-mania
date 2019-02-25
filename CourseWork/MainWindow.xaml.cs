@@ -21,7 +21,6 @@ namespace CourseWork
     public partial class MainWindow : Window
     {
         private CanvasHelper cv;
-        protected Random random;
         private delegate void UpdateDelegate();
         private Thread loop;
         private Game game;
@@ -29,7 +28,6 @@ namespace CourseWork
         private int mpf = 1000 / 40;
         public MainWindow() {
             InitializeComponent();
-            random = new Random();
             Helper.errorHandler += Helper_errorHandler;
         }
 
